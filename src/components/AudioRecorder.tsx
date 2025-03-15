@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRecorder } from '@/hooks/useRecorder';
 import { Button } from '@/components/ui/button';
 import { Mic, StopCircle, PlayCircle, PauseCircle, RotateCcw, CheckCircle } from 'lucide-react';
@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { useApp } from '@/contexts/AppContext';
 import AudioWaveform from './AudioWaveform';
 import { Slider } from '@/components/ui/slider';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface AudioRecorderProps {
   onRecordingComplete: (blob: Blob, url: string, duration: number) => void;
@@ -30,6 +31,9 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({ onRecordingComplet
   
   const [formattedTime, setFormattedTime] = useState("00:00");
   const [currentPermission, setCurrentPermission] = useState<PermissionState | null>(null);
+  const isMobile = useIsMobile();
+  const [playbackProgress, setPlaybackProgress] = useState(0);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   
   useEffect(() => {
     // Check microphone permission status
@@ -57,6 +61,38 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({ onRecordingComplet
     }
   }, [durationSec]);
   
+  useEffect(() => {
+    if (audioUrl && !audioRef.current) {
+      audioRef.current = new Audio(audioUrl);
+      
+      const updatePlaybackProgress = () => {
+        if (audioRef.current) {
+          const progress = (audioRef.current.currentTime / audioRef.current.duration) * 100;
+          setPlaybackProgress(isNaN(progress) ? 0 : progress);
+        }
+      };
+      
+      audioRef.current.addEventListener('timeupdate', updatePlaybackProgress);
+      audioRef.current.addEventListener('ended', () => {
+        setPlaybackProgress(0);
+      });
+      
+      return () => {
+        if (audioRef.current) {
+          audioRef.current.removeEventListener('timeupdate', updatePlaybackProgress);
+          audioRef.current.removeEventListener('ended', () => {});
+        }
+      };
+    }
+  }, [audioUrl]);
+  
+  const handleSeek = (value: number[]) => {
+    if (audioRef.current && audioUrl) {
+      const seekTo = (value[0] / 100) * audioRef.current.duration;
+      audioRef.current.currentTime = seekTo;
+    }
+  };
+  
   const handleSave = () => {
     if (audioBlob && audioUrl) {
       onRecordingComplete(audioBlob, audioUrl, durationSec);
@@ -78,7 +114,19 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({ onRecordingComplet
           {formattedTime}
         </div>
         
-        <div className="flex justify-center space-x-8 mb-8">
+        {audioUrl && !isRecording && (
+          <div className="mb-6 px-2">
+            <Slider
+              value={[playbackProgress]}
+              max={100}
+              step={0.1}
+              onValueChange={handleSeek}
+              className="w-full"
+            />
+          </div>
+        )}
+        
+        <div className="flex justify-center space-x-6 sm:space-x-8 mb-8">
           {!isRecording && !audioUrl && (
             <button
               onClick={startRecording}
@@ -91,10 +139,10 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({ onRecordingComplet
           {isRecording && (
             <button
               onClick={stopRecording}
-              className="w-20 h-20 rounded-md bg-white flex items-center justify-center shadow-lg animate-scale-in"
+              className="w-16 h-16 sm:w-20 sm:h-20 rounded-md bg-white flex items-center justify-center shadow-lg animate-scale-in"
               aria-label="Stop recording"
             >
-              <div className="w-10 h-10 bg-app-red rounded-md" />
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-app-red rounded-md" />
             </button>
           )}
           
@@ -103,39 +151,39 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({ onRecordingComplet
               <Button
                 variant="outline"
                 size="icon"
-                className="w-16 h-16 rounded-full border-2"
+                className="w-12 h-12 sm:w-16 sm:h-16 rounded-full border-2"
                 onClick={resetRecording}
               >
-                <RotateCcw className="h-8 w-8" />
+                <RotateCcw className="h-6 w-6 sm:h-8 sm:w-8" />
               </Button>
               
               {isPlaying ? (
                 <Button
                   variant="outline"
                   size="icon"
-                  className="w-16 h-16 rounded-full border-2"
+                  className="w-12 h-12 sm:w-16 sm:h-16 rounded-full border-2"
                   onClick={pauseRecording}
                 >
-                  <PauseCircle className="h-8 w-8" />
+                  <PauseCircle className="h-6 w-6 sm:h-8 sm:w-8" />
                 </Button>
               ) : (
                 <Button
                   variant="outline"
                   size="icon"
-                  className="w-16 h-16 rounded-full border-2"
+                  className="w-12 h-12 sm:w-16 sm:h-16 rounded-full border-2"
                   onClick={playRecording}
                 >
-                  <PlayCircle className="h-8 w-8" />
+                  <PlayCircle className="h-6 w-6 sm:h-8 sm:w-8" />
                 </Button>
               )}
               
               <Button
                 variant="default"
                 size="icon"
-                className="w-16 h-16 rounded-full bg-app-green border-none"
+                className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-app-green border-none"
                 onClick={handleSave}
               >
-                <CheckCircle className="h-8 w-8" />
+                <CheckCircle className="h-6 w-6 sm:h-8 sm:w-8" />
               </Button>
             </>
           )}
