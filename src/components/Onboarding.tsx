@@ -43,7 +43,7 @@ export const Onboarding: React.FC = () => {
             {step === OnboardingStep.INTRO 
               ? "Your AI-powered conversation coach" 
               : step === OnboardingStep.EXPLAINER 
-                ? "How DialogIQ works"
+                ? "How it works"
                 : step === OnboardingStep.VOICE_RECOGNITION 
                   ? "Let's recognize your voice first" 
                   : "What would you like to practice today?"}
