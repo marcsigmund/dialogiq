@@ -8,6 +8,9 @@ import {
   MicOff,
   PlayCircle,
   PauseCircle,
+  ChevronDown,
+  ChevronUp,
+  Clock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Slider } from "@/components/ui/slider";
@@ -15,6 +18,22 @@ import { uploadAudio, pollProcessStatus } from "@/lib/api";
 import { useToast } from "@/components/ui/use-toast";
 import { LiveAudioVisualizer } from "react-audio-visualize";
 import { PulseLoader } from "react-spinners";
+import Typewriter from "typewriter-effect";
+
+interface Word {
+  text: string;
+  start: number;
+  end: number;
+  type: "word" | "spacing";
+  speaker_id: string;
+}
+
+interface TranscriptionResult {
+  language_code: string;
+  language_probability: number;
+  text: string;
+  words: Word[];
+}
 
 interface VoiceRecognitionScreenProps {
   onNext: () => void;
@@ -39,6 +58,12 @@ export const VoiceRecognitionScreen: React.FC<VoiceRecognitionScreenProps> = ({
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [mediaRecorderState, setMediaRecorderState] =
     useState<MediaRecorder | null>(null);
+  const [transcriptionText, setTranscriptionText] = useState<string | null>(
+    null
+  );
+  const [showTranscription, setShowTranscription] = useState(false);
+  const [currentWordIndex, setCurrentWordIndex] = useState(-1);
+  const transcriptionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const mediaRecorder = useRef<MediaRecorder | null>(null);
   const stream = useRef<MediaStream | null>(null);
@@ -198,6 +223,9 @@ export const VoiceRecognitionScreen: React.FC<VoiceRecognitionScreenProps> = ({
   const handleUploadAudio = async (blob: Blob) => {
     setIsUploading(true);
     setUploadError(null);
+    setTranscriptionText(null);
+    setShowTranscription(false);
+    setCurrentWordIndex(-1);
 
     console.log("Starting audio upload process...");
     console.log("Audio blob size:", Math.round(blob.size / 1024), "KB");
@@ -227,11 +255,18 @@ export const VoiceRecognitionScreen: React.FC<VoiceRecognitionScreenProps> = ({
             console.log("Polling completed with final status:", finalStatus);
             setIsPolling(false);
 
-            if (finalStatus.status === "complete") {
+            if (
+              finalStatus.status === "complete" &&
+              finalStatus.result?.elevenlabs?.text
+            ) {
               console.log(
                 "Process completed successfully:",
                 finalStatus.result
               );
+
+              // Set the transcription text and show it
+              setTranscriptionText(finalStatus.result.elevenlabs.text);
+              setShowTranscription(true);
 
               toast({
                 title: "Processing complete",
@@ -272,6 +307,58 @@ export const VoiceRecognitionScreen: React.FC<VoiceRecognitionScreenProps> = ({
     } finally {
       setIsUploading(false);
     }
+  };
+
+  const animateTranscription = (result: TranscriptionResult) => {
+    // Clear any existing animation
+    if (transcriptionTimeoutRef.current) {
+      clearTimeout(transcriptionTimeoutRef.current);
+    }
+    setCurrentWordIndex(-1);
+
+    // Guard against null or invalid result
+    if (!result?.words) {
+      console.error("Invalid transcription result:", result);
+      return;
+    }
+
+    // Animate each word based on its timing
+    const words = result.words.filter((word) => word.type === "word");
+    let currentIndex = 0;
+
+    const animateWord = () => {
+      if (currentIndex < words.length) {
+        setCurrentWordIndex(currentIndex);
+        const nextWord = words[currentIndex + 1];
+        if (nextWord) {
+          const delay = (nextWord.start - words[currentIndex].start) * 1000;
+          transcriptionTimeoutRef.current = setTimeout(() => {
+            currentIndex++;
+            animateWord();
+          }, delay);
+        }
+      }
+    };
+
+    // Only start animation if we have words
+    if (words.length > 0) {
+      animateWord();
+    }
+  };
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (transcriptionTimeoutRef.current) {
+        clearTimeout(transcriptionTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
   const handleNext = () => {
@@ -395,6 +482,40 @@ export const VoiceRecognitionScreen: React.FC<VoiceRecognitionScreenProps> = ({
               : "Let's record a sample of your voice"}
           </p>
         </div>
+
+        {/* Transcription section */}
+        {transcriptionText && (
+          <div className="w-full max-w-md">
+            <button
+              onClick={() => setShowTranscription(!showTranscription)}
+              className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+            >
+              <div className="flex items-center space-x-2">
+                <span className="font-medium">View Transcription</span>
+              </div>
+              {showTranscription ? (
+                <ChevronUp className="w-5 h-5" />
+              ) : (
+                <ChevronDown className="w-5 h-5" />
+              )}
+            </button>
+            {showTranscription && (
+              <div className="mt-4 p-4 bg-white rounded-lg shadow-sm border text-left">
+                <Typewriter
+                  onInit={(typewriter) => {
+                    typewriter
+                      .changeDelay(30)
+                      .typeString(transcriptionText)
+                      .start();
+                  }}
+                  options={{
+                    cursor: "",
+                  }}
+                />
+              </div>
+            )}
+          </div>
+        )}
 
         {uploadError && (
           <div className="text-amber-500 text-center">{uploadError}</div>
