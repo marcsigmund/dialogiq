@@ -2,7 +2,7 @@
 import React, { useState, useRef } from 'react';
 import { useApp } from '@/contexts/AppContext';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Mic, CheckCircle } from 'lucide-react';
+import { ArrowRight, Mic, CheckCircle, MessageSquare, Sparkles, Volume2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const useCases = [
@@ -28,7 +28,7 @@ const useCases = [
 
 export const Onboarding: React.FC = () => {
   const { setIsOnboarded, setUseCase } = useApp();
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(0); // Start with intro screen (step 0)
   const [isListening, setIsListening] = useState(false);
   const [selectedUseCase, setSelectedUseCase] = useState<string | null>(null);
   const [voiceRecognized, setVoiceRecognized] = useState(false);
@@ -51,8 +51,10 @@ export const Onboarding: React.FC = () => {
   };
   
   const handleNext = () => {
-    if (step === 1 && voiceRecognized) {
-      setStep(2);
+    if (step === 0) {
+      setStep(1); // Move from intro to voice recognition
+    } else if (step === 1 && voiceRecognized) {
+      setStep(2); // Move from voice recognition to use case selection
     } else if (step === 2 && selectedUseCase) {
       // Complete onboarding
       setUseCase(selectedUseCase as any);
@@ -61,9 +63,11 @@ export const Onboarding: React.FC = () => {
   };
   
   const handleSkip = () => {
-    if (step === 1) {
+    if (step === 0) {
+      setStep(1); // Skip intro, go to voice recognition
+    } else if (step === 1) {
       setVoiceRecognized(true);
-      setStep(2);
+      setStep(2); // Skip voice recognition, go to use case selection
     }
   };
   
@@ -73,14 +77,52 @@ export const Onboarding: React.FC = () => {
         <div className="text-center mb-8">
           <h1 className="text-3xl font-semibold mb-2">DialogIQ</h1>
           <p className="text-muted-foreground">
-            {step === 1 
-              ? "Let's recognize your voice first" 
-              : "What would you like to practice today?"}
+            {step === 0 
+              ? "Your AI-powered conversation coach" 
+              : step === 1 
+                ? "Let's recognize your voice first" 
+                : "What would you like to practice today?"}
           </p>
         </div>
         
         <div className="glass-panel p-6 mb-6">
-          {step === 1 ? (
+          {step === 0 ? (
+            <div className="flex flex-col items-center space-y-6">
+              <div className="flex space-x-4 mb-2">
+                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                  <MessageSquare className="w-8 h-8" />
+                </div>
+                <div className="w-16 h-16 rounded-full bg-app-green/10 flex items-center justify-center text-app-green">
+                  <Sparkles className="w-8 h-8" />
+                </div>
+                <div className="w-16 h-16 rounded-full bg-app-red/10 flex items-center justify-center text-app-red">
+                  <Volume2 className="w-8 h-8" />
+                </div>
+              </div>
+              
+              <div className="text-center">
+                <h2 className="text-xl font-medium mb-3">Master Your Communication</h2>
+                <p className="text-gray-600 mb-4">
+                  DialogIQ helps you practice conversations, receive real-time feedback, 
+                  and improve your communication skills through AI-powered analysis.
+                </p>
+                <ul className="text-left space-y-2 mb-4">
+                  <li className="flex items-start">
+                    <CheckCircle className="w-5 h-5 text-app-green mr-2 mt-0.5" />
+                    <span>Practice speaking in a safe environment</span>
+                  </li>
+                  <li className="flex items-start">
+                    <CheckCircle className="w-5 h-5 text-app-green mr-2 mt-0.5" />
+                    <span>Get personalized feedback on your delivery</span>
+                  </li>
+                  <li className="flex items-start">
+                    <CheckCircle className="w-5 h-5 text-app-green mr-2 mt-0.5" />
+                    <span>Track your improvement over time</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          ) : step === 1 ? (
             <div className="flex flex-col items-center space-y-6">
               <div 
                 className={cn(
@@ -147,7 +189,9 @@ export const Onboarding: React.FC = () => {
         </div>
         
         <div className="flex justify-between items-center">
-          {step === 1 && (
+          {step === 0 ? (
+            <div className="w-20"></div> // Empty spacer for alignment
+          ) : step === 1 ? (
             <Button 
               variant="link" 
               onClick={handleSkip}
@@ -155,8 +199,7 @@ export const Onboarding: React.FC = () => {
             >
               Skip
             </Button>
-          )}
-          {step === 2 && (
+          ) : (
             <Button 
               variant="ghost" 
               onClick={() => setStep(1)}
