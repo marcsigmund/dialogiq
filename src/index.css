@@ -42,9 +42,42 @@
     @apply border-border;
   }
 
+  html, body {
+    @apply overscroll-none touch-manipulation antialiased;
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  #root {
+    height: 100%;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  input,
+  textarea,
+  button,
+  select {
+    @apply appearance-none;
+    font-family: inherit;
+  }
+
+  /* Hide scrollbar but keep functionality */
+  * {
+    scrollbar-width: none; /* Firefox */
+  }
+  *::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Edge */
   }
 }
 
@@ -63,7 +96,7 @@
   }
   
   .recording-item {
-    @apply border-b border-app-gray-medium p-4 flex justify-between items-center transition-all duration-200 hover:bg-app-gray-light;
+    @apply border-b border-app-gray-medium p-4 flex justify-between items-center transition-all duration-200 hover:bg-app-gray-light active:bg-app-gray-medium;
   }
   
   .waveform-container {
@@ -88,5 +121,64 @@
   
   .ios-input {
     @apply bg-app-gray-light px-4 py-3 rounded-lg text-black w-full focus:outline-none focus:ring-2 focus:ring-app-blue;
+  }
+
+  /* Native-like container */
+  .native-container {
+    @apply w-full h-full max-w-md mx-auto px-4 py-6 md:px-6;
+  }
+  
+  /* iOS-style navigation bar */
+  .ios-navbar {
+    @apply sticky top-0 z-10 px-4 py-3 flex items-center justify-between bg-white/80 backdrop-blur-lg border-b border-app-gray-medium;
+  }
+  
+  /* Bottom tab bar */
+  .tab-bar {
+    @apply fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-lg border-t border-app-gray-medium flex justify-around py-2 z-10;
+  }
+  
+  /* Full-screen container for modal-like pages */
+  .fullscreen-container {
+    @apply fixed inset-0 bg-background z-50 overflow-y-auto;
+  }
+  
+  /* Native-style back button */
+  .back-button {
+    @apply flex items-center text-app-blue;
+  }
+  
+  /* iOS-style large title */
+  .ios-large-title {
+    @apply text-3xl font-bold mb-6 px-4;
+  }
+  
+  /* iOS-style list */
+  .ios-list {
+    @apply rounded-xl overflow-hidden bg-white border border-app-gray-medium divide-y divide-app-gray-medium;
+  }
+  
+  /* iOS-style list item */
+  .ios-list-item {
+    @apply px-4 py-3 flex items-center justify-between bg-white active:bg-app-gray-light;
+  }
+
+  /* Safe area padding for notches and home indicators */
+  .safe-area-padding {
+    @apply pt-safe pb-safe pl-safe pr-safe;
+  }
+}
+
+@layer utilities {
+  .tap-highlight-none {
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  .overscroll-none {
+    overscroll-behavior: none;
+  }
+  
+  .touch-manipulation {
+    touch-action: manipulation;
   }
 }

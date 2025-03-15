@@ -4,6 +4,7 @@ import { useApp } from '@/contexts/AppContext';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Mic, CheckCircle, MessageSquare, Sparkles, Volume2, ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const useCases = [
   {
@@ -32,6 +33,7 @@ export const Onboarding: React.FC = () => {
   const [isListening, setIsListening] = useState(false);
   const [selectedUseCase, setSelectedUseCase] = useState<string | null>(null);
   const [voiceRecognized, setVoiceRecognized] = useState(false);
+  const isMobile = useIsMobile();
   
   // Voice recognition simulation for demo purposes
   const recognizeVoiceTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -85,10 +87,13 @@ export const Onboarding: React.FC = () => {
   };
   
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4">
-      <div className="w-full max-w-md animate-scale-in">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-semibold mb-2">DialogIQ</h1>
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 safe-area-padding">
+      <div className={cn(
+        "w-full animate-scale-in",
+        isMobile ? "max-w-full" : "max-w-md"
+      )}>
+        <div className="text-center mb-6">
+          <h1 className="text-3xl font-semibold mb-1">DialogIQ</h1>
           <p className="text-muted-foreground">
             {step === 0 
               ? "Your AI-powered conversation coach" 
@@ -98,9 +103,12 @@ export const Onboarding: React.FC = () => {
           </p>
         </div>
         
-        <div className="glass-panel p-6 mb-6">
+        <div className={cn(
+          "glass-panel p-5 mb-5",
+          isMobile && "mx-0 rounded-xl"
+        )}>
           {step === 0 ? (
-            <div className="flex flex-col items-center space-y-6">
+            <div className="flex flex-col items-center space-y-5">
               <div className="flex space-x-4 mb-2">
                 <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary">
                   <MessageSquare className="w-8 h-8" />
@@ -173,15 +181,15 @@ export const Onboarding: React.FC = () => {
               </div>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {useCases.map((useCase) => (
                 <div 
                   key={useCase.id}
                   className={cn(
-                    "p-4 rounded-xl transition-all duration-200 cursor-pointer",
+                    "p-4 rounded-xl transition-all duration-200 cursor-pointer active:scale-98 touch-manipulation",
                     selectedUseCase === useCase.id 
-                      ? "bg-primary/10 border-2 border-primary" 
-                      : "bg-app-gray-light hover:bg-app-gray-medium"
+                      ? "bg-primary/10 border border-primary" 
+                      : "bg-app-gray-light hover:bg-app-gray-medium active:bg-app-gray-medium"
                   )}
                   onClick={() => handleSelectUseCase(useCase.id)}
                 >
