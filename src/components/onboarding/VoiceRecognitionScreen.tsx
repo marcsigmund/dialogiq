@@ -1,8 +1,9 @@
 
 import React, { useRef, useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, ArrowLeft, CheckCircle, Mic } from 'lucide-react';
+import { ArrowRight, ArrowLeft, CheckCircle, Mic, PlayCircle, PauseCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Slider } from '@/components/ui/slider';
 
 // Test comment for GitHub commit
 interface VoiceRecognitionScreenProps {
@@ -19,10 +20,15 @@ export const VoiceRecognitionScreen: React.FC<VoiceRecognitionScreenProps> = ({
   const [isListening, setIsListening] = useState(false);
   const [voiceRecognized, setVoiceRecognized] = useState(false);
   const [currentPermission, setCurrentPermission] = useState<PermissionState | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [playbackProgress, setPlaybackProgress] = useState(0);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  
   const mediaRecorder = useRef<MediaRecorder | null>(null);
   const stream = useRef<MediaStream | null>(null);
   const audioChunks = useRef<Blob[]>([]);
   const recognizeTimeout = useRef<NodeJS.Timeout | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   
   useEffect(() => {
     // Check microphone permission status
@@ -49,8 +55,43 @@ export const VoiceRecognitionScreen: React.FC<VoiceRecognitionScreenProps> = ({
       if (stream.current) {
         stream.current.getTracks().forEach(track => track.stop());
       }
+      
+      if (audioUrl) {
+        URL.revokeObjectURL(audioUrl);
+      }
+      
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
     };
-  }, []);
+  }, [audioUrl]);
+  
+  useEffect(() => {
+    if (audioUrl && !audioRef.current) {
+      audioRef.current = new Audio(audioUrl);
+      
+      const updatePlaybackProgress = () => {
+        if (audioRef.current) {
+          const progress = (audioRef.current.currentTime / audioRef.current.duration) * 100;
+          setPlaybackProgress(isNaN(progress) ? 0 : progress);
+        }
+      };
+      
+      audioRef.current.addEventListener('timeupdate', updatePlaybackProgress);
+      audioRef.current.addEventListener('ended', () => {
+        setIsPlaying(false);
+        setPlaybackProgress(0);
+      });
+      
+      return () => {
+        if (audioRef.current) {
+          audioRef.current.removeEventListener('timeupdate', updatePlaybackProgress);
+          audioRef.current.removeEventListener('ended', () => {});
+        }
+      };
+    }
+  }, [audioUrl]);
   
   const handleVoiceRecognition = async () => {
     try {
@@ -69,7 +110,9 @@ export const VoiceRecognitionScreen: React.FC<VoiceRecognitionScreenProps> = ({
       };
       
       mediaRecorder.current.onstop = () => {
-        // Process audio if needed
+        const audioBlob = new Blob(audioChunks.current, { type: 'audio/wav' });
+        const url = URL.createObjectURL(audioBlob);
+        setAudioUrl(url);
         setIsListening(false);
         setVoiceRecognized(true);
       };
@@ -96,6 +139,25 @@ export const VoiceRecognitionScreen: React.FC<VoiceRecognitionScreenProps> = ({
     }
   };
   
+  const handlePlayPause = () => {
+    if (!audioRef.current || !audioUrl) return;
+    
+    if (isPlaying) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    } else {
+      audioRef.current.play();
+      setIsPlaying(true);
+    }
+  };
+  
+  const handleSeek = (value: number[]) => {
+    if (audioRef.current && audioUrl) {
+      const seekTo = (value[0] / 100) * audioRef.current.duration;
+      audioRef.current.currentTime = seekTo;
+    }
+  };
+  
   const handleNext = () => {
     if (voiceRecognized) {
       onNext();
@@ -110,23 +172,43 @@ export const VoiceRecognitionScreen: React.FC<VoiceRecognitionScreenProps> = ({
             "w-32 h-32 rounded-full flex items-center justify-center transition-all duration-300",
             isListening 
               ? "bg-app-red text-white animate-pulse-record" 
-              : voiceRecognized 
+              : voiceRecognized && !isPlaying
                 ? "bg-app-green/10 text-app-green" 
-                : "bg-app-gray-light text-muted-foreground"
+                : voiceRecognized && isPlaying
+                  ? "bg-app-green text-white animate-pulse"
+                  : "bg-app-gray-light text-muted-foreground"
           )}
-          onClick={!isListening && !voiceRecognized ? handleVoiceRecognition : undefined}
+          onClick={!isListening && !voiceRecognized ? handleVoiceRecognition : voiceRecognized ? handlePlayPause : undefined}
         >
           {voiceRecognized ? (
-            <CheckCircle className="w-16 h-16" />
+            isPlaying ? (
+              <PauseCircle className="w-16 h-16" />
+            ) : (
+              <PlayCircle className="w-16 h-16" />
+            )
           ) : (
             <Mic className={cn("w-16 h-16", isListening && "text-white")} />
           )}
         </div>
         
+        {voiceRecognized && audioUrl && (
+          <div className="w-full max-w-xs mx-auto">
+            <Slider
+              value={[playbackProgress]}
+              max={100}
+              step={0.1}
+              onValueChange={handleSeek}
+              className="w-full"
+            />
+          </div>
+        )}
+        
         <div className="text-center">
           <p className="font-medium text-lg mb-1">
             {voiceRecognized 
-              ? "Voice recorded successfully!" 
+              ? isPlaying 
+                ? "Playing back your voice..."
+                : "Voice recorded successfully!" 
               : isListening 
                 ? "Listening..." 
                 : "Tap to start improving"}
@@ -167,3 +249,4 @@ export const VoiceRecognitionScreen: React.FC<VoiceRecognitionScreenProps> = ({
     </>
   );
 };
+
