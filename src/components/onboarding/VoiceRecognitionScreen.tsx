@@ -5,7 +5,6 @@ import { ArrowRight, ArrowLeft, CheckCircle, Mic, PlayCircle, PauseCircle } from
 import { cn } from '@/lib/utils';
 import { Slider } from '@/components/ui/slider';
 
-// Test comment for GitHub commit
 interface VoiceRecognitionScreenProps {
   onNext: () => void;
   onBack: () => void;
@@ -87,7 +86,10 @@ export const VoiceRecognitionScreen: React.FC<VoiceRecognitionScreenProps> = ({
       return () => {
         if (audioRef.current) {
           audioRef.current.removeEventListener('timeupdate', updatePlaybackProgress);
-          audioRef.current.removeEventListener('ended', () => {});
+          audioRef.current.removeEventListener('ended', () => {
+            setIsPlaying(false);
+            setPlaybackProgress(0);
+          });
         }
       };
     }
@@ -146,7 +148,9 @@ export const VoiceRecognitionScreen: React.FC<VoiceRecognitionScreenProps> = ({
       audioRef.current.pause();
       setIsPlaying(false);
     } else {
-      audioRef.current.play();
+      audioRef.current.play().catch(error => {
+        console.error('Error playing audio:', error);
+      });
       setIsPlaying(true);
     }
   };
@@ -155,6 +159,7 @@ export const VoiceRecognitionScreen: React.FC<VoiceRecognitionScreenProps> = ({
     if (audioRef.current && audioUrl) {
       const seekTo = (value[0] / 100) * audioRef.current.duration;
       audioRef.current.currentTime = seekTo;
+      setPlaybackProgress(value[0]);
     }
   };
   
@@ -179,6 +184,7 @@ export const VoiceRecognitionScreen: React.FC<VoiceRecognitionScreenProps> = ({
                   : "bg-app-gray-light text-muted-foreground"
           )}
           onClick={!isListening && !voiceRecognized ? handleVoiceRecognition : voiceRecognized ? handlePlayPause : undefined}
+          style={{ cursor: isListening ? 'default' : 'pointer' }}
         >
           {voiceRecognized ? (
             isPlaying ? (
@@ -211,14 +217,14 @@ export const VoiceRecognitionScreen: React.FC<VoiceRecognitionScreenProps> = ({
                 : "Voice recorded successfully!" 
               : isListening 
                 ? "Listening..." 
-                : "Tap to start improving"}
+                : "Tap to start recording"}
           </p>
           <p className="text-sm text-muted-foreground">
             {voiceRecognized 
               ? "You're ready for your first conversation" 
               : isListening 
                 ? "Please speak naturally for a few seconds" 
-                : "Let's have your first practice conversation"}
+                : "Let's record a short sample of your voice"}
           </p>
         </div>
         
@@ -249,4 +255,3 @@ export const VoiceRecognitionScreen: React.FC<VoiceRecognitionScreenProps> = ({
     </>
   );
 };
-
