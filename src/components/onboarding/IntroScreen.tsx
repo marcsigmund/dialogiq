@@ -46,8 +46,7 @@ export const IntroScreen: React.FC<IntroScreenProps> = ({ onNext }) => {
           </ul>
         </div>
       </div>
-      <div className="flex justify-between items-center">
-        <div className="w-20"></div>
+      <div className="w-full">
         <Button variant="default" onClick={onNext} className="w-full">
           Get Started
         </Button>
