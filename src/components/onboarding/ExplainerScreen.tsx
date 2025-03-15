@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, ArrowLeft, MessageSquare, Volume2, Sparkles, Users, Languages, Briefcase, Heart, ChevronDown, AlertCircle } from 'lucide-react';
+import { ArrowRight, ArrowLeft, MessageSquare, Volume2, Sparkles, Users, Languages, Briefcase, Heart, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form';
@@ -64,7 +63,7 @@ export const ExplainerScreen: React.FC<ExplainerScreenProps> = ({ onNext, onBack
   const [currentPage, setCurrentPage] = useState<number>(0);
   const [activeStepIndex, setActiveStepIndex] = useState<number>(-1);
   const [showAlert, setShowAlert] = useState<boolean>(false);
-  const [showSelectionReminder, setShowSelectionReminder] = useState<boolean>(false);
+  const [showSelectionHelper, setShowSelectionHelper] = useState<boolean>(false);
   const form = useForm();
 
   useEffect(() => {
@@ -93,7 +92,8 @@ export const ExplainerScreen: React.FC<ExplainerScreenProps> = ({ onNext, onBack
         ? prev.filter(item => item !== id) 
         : [...prev, id]
     );
-    setShowSelectionReminder(false);
+    setShowSelectionHelper(false);
+    setShowAlert(false);
   };
 
   const toggleLanguage = (value: string) => {
@@ -102,17 +102,15 @@ export const ExplainerScreen: React.FC<ExplainerScreenProps> = ({ onNext, onBack
         ? prev.filter(item => item !== value) 
         : [...prev, value]
     );
-    setShowSelectionReminder(false);
+    setShowSelectionHelper(false);
+    setShowAlert(false);
   };
 
   const nextPage = () => {
     if (currentPage === 1 && selectedInterests.length === 0 && selectedLanguages.length === 0) {
-      setShowSelectionReminder(true);
-      
-      // Animated selection reminder
+      setShowSelectionHelper(true);
       setShowAlert(true);
       setTimeout(() => setShowAlert(false), 5000);
-      
       return;
     }
     
@@ -135,25 +133,19 @@ export const ExplainerScreen: React.FC<ExplainerScreenProps> = ({ onNext, onBack
   };
 
   return (
-    <div className="space-y-6 relative pt-12">
-      {/* Selection Reminder Alert - Fixed positioning that doesn't overlap */}
-      {showAlert && (
-        <div className="fixed inset-x-0 top-4 z-50 flex justify-center px-4">
-          <Alert variant="destructive" className="bg-primary/10 border-primary/20 text-primary flex items-center gap-2 max-w-md w-full shadow-lg">
-            <AlertCircle className="h-4 w-4" />
-            <span>Please make at least one selection before continuing</span>
-          </Alert>
-        </div>
+    <div className="space-y-6">
+      {currentPage === 1 && showSelectionHelper && (
+        <Alert className="bg-primary/5 border border-primary/20 text-foreground mb-4">
+          <Info className="h-4 w-4 text-primary mr-2" />
+          <span className="text-sm">Please select at least one option before continuing</span>
+        </Alert>
       )}
       
-      {showSelectionReminder && (
-        <div className="absolute inset-x-0 -top-8 z-10 flex justify-center">
-          <div className="flex items-center gap-2 text-primary animate-bounce py-2">
-            <ChevronDown className="h-5 w-5" />
-            <span className="text-sm font-medium">Select at least one option</span>
-            <ChevronDown className="h-5 w-5" />
-          </div>
-        </div>
+      {currentPage === 1 && showAlert && (
+        <Alert variant="destructive" className="mb-4">
+          <Info className="h-4 w-4 mr-2" />
+          <span className="text-sm">Selection required: Choose at least one option</span>
+        </Alert>
       )}
 
       {currentPage === 0 && (

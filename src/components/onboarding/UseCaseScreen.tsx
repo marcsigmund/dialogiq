@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, ArrowLeft, CheckCircle, ChevronDown, AlertCircle } from 'lucide-react';
+import { ArrowRight, ArrowLeft, CheckCircle, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Alert } from "@/components/ui/alert";
 
@@ -37,38 +37,32 @@ export const UseCaseScreen: React.FC<UseCaseScreenProps> = ({ onComplete, onBack
   
   const handleSelectUseCase = (id: string) => {
     setSelectedUseCase(id);
+    setShowAlert(false);
   };
   
   const handleComplete = () => {
     if (selectedUseCase) {
       onComplete(selectedUseCase);
     } else {
-      // Show the alert animation
       setShowAlert(true);
       setTimeout(() => setShowAlert(false), 5000);
     }
   };
 
   return (
-    <div className="relative pt-12">
-      {/* Selection Reminder Alert - Fixed positioning that doesn't overlap */}
-      {showAlert && (
-        <div className="fixed inset-x-0 top-4 z-50 flex justify-center px-4">
-          <Alert variant="destructive" className="bg-primary/10 border-primary/20 text-primary flex items-center gap-2 max-w-md w-full shadow-lg">
-            <AlertCircle className="h-4 w-4" />
-            <span>Please select a use case before continuing</span>
-          </Alert>
-        </div>
+    <div className="space-y-6">
+      {!selectedUseCase && (
+        <Alert className="bg-primary/5 border border-primary/20 text-foreground mb-4">
+          <Info className="h-4 w-4 text-primary mr-2" />
+          <span className="text-sm">Please select a use case before continuing</span>
+        </Alert>
       )}
       
-      {!selectedUseCase && showAlert && (
-        <div className="absolute inset-x-0 -top-8 z-10 flex justify-center">
-          <div className="flex items-center gap-2 text-primary animate-bounce py-2">
-            <ChevronDown className="h-5 w-5" />
-            <span className="text-sm font-medium">Select an option</span>
-            <ChevronDown className="h-5 w-5" />
-          </div>
-        </div>
+      {showAlert && (
+        <Alert variant="destructive" className="mb-4">
+          <Info className="h-4 w-4 mr-2" />
+          <span className="text-sm">Selection required: Choose a use case to continue</span>
+        </Alert>
       )}
 
       <div className="space-y-3">
