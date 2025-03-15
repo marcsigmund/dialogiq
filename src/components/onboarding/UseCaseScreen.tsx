@@ -1,9 +1,8 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, ArrowLeft, CheckCircle, Info } from 'lucide-react';
+import { ArrowRight, ArrowLeft, CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Alert } from "@/components/ui/alert";
 
 const useCases = [
   {
@@ -33,39 +32,19 @@ interface UseCaseScreenProps {
 
 export const UseCaseScreen: React.FC<UseCaseScreenProps> = ({ onComplete, onBack }) => {
   const [selectedUseCase, setSelectedUseCase] = useState<string | null>(null);
-  const [showError, setShowError] = useState<boolean>(false);
   
   const handleSelectUseCase = (id: string) => {
     setSelectedUseCase(id);
-    setShowError(false);
   };
   
   const handleComplete = () => {
     if (selectedUseCase) {
       onComplete(selectedUseCase);
-    } else {
-      setShowError(true);
     }
   };
 
   return (
     <div className="space-y-6">
-      {!selectedUseCase && (
-        <Alert 
-          className={cn(
-            "border-l-4 mb-4 transition-colors", 
-            showError 
-              ? "border-l-destructive bg-destructive/10 text-destructive" 
-              : "border-l-primary bg-primary/5 text-foreground"
-          )}
-        >
-          <Info className={cn("h-4 w-4 mr-2", showError ? "text-destructive" : "text-primary")} />
-          <span className="text-sm font-medium">
-            {showError ? "Please select a use case to continue" : "Select a use case before continuing"}
-          </span>
-        </Alert>
-      )}
-
       <div className="space-y-3">
         {useCases.map((useCase) => (
           <div 
@@ -103,7 +82,11 @@ export const UseCaseScreen: React.FC<UseCaseScreenProps> = ({ onComplete, onBack
         <Button 
           variant="default" 
           onClick={handleComplete}
-          className="transition-transform duration-200 hover:translate-x-1"
+          disabled={!selectedUseCase}
+          className={cn(
+            "transition-transform duration-200",
+            selectedUseCase && "hover:translate-x-1"
+          )}
         >
           Start Practicing
           <ArrowRight className="w-4 h-4 ml-2" />

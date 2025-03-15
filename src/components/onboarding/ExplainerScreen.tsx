@@ -1,12 +1,12 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, ArrowLeft, MessageSquare, Volume2, Sparkles, Users, Languages, Briefcase, Heart, Info } from 'lucide-react';
+import { ArrowRight, ArrowLeft, MessageSquare, Volume2, Sparkles, Users, Languages, Briefcase, Heart } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form';
 import { useForm } from 'react-hook-form';
 import { LanguageSelector, availableLanguages } from './LanguageSelector';
-import { Alert } from "@/components/ui/alert";
 
 const steps = [
   {
@@ -62,7 +62,6 @@ export const ExplainerScreen: React.FC<ExplainerScreenProps> = ({ onNext, onBack
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState<number>(0);
   const [activeStepIndex, setActiveStepIndex] = useState<number>(-1);
-  const [showError, setShowError] = useState<boolean>(false);
   const form = useForm();
 
   useEffect(() => {
@@ -91,7 +90,6 @@ export const ExplainerScreen: React.FC<ExplainerScreenProps> = ({ onNext, onBack
         ? prev.filter(item => item !== id) 
         : [...prev, id]
     );
-    setShowError(false);
   };
 
   const toggleLanguage = (value: string) => {
@@ -100,12 +98,12 @@ export const ExplainerScreen: React.FC<ExplainerScreenProps> = ({ onNext, onBack
         ? prev.filter(item => item !== value) 
         : [...prev, value]
     );
-    setShowError(false);
   };
 
+  const hasSelections = selectedInterests.length > 0 || selectedLanguages.length > 0;
+
   const nextPage = () => {
-    if (currentPage === 1 && selectedInterests.length === 0 && selectedLanguages.length === 0) {
-      setShowError(true);
+    if (currentPage === 1 && !hasSelections) {
       return;
     }
     
@@ -129,22 +127,6 @@ export const ExplainerScreen: React.FC<ExplainerScreenProps> = ({ onNext, onBack
 
   return (
     <div className="space-y-6">
-      {currentPage === 1 && selectedInterests.length === 0 && selectedLanguages.length === 0 && (
-        <Alert 
-          className={cn(
-            "border-l-4 mb-4 transition-colors",
-            showError 
-              ? "border-l-destructive bg-destructive/10 text-destructive" 
-              : "border-l-primary bg-primary/5 text-foreground"
-          )}
-        >
-          <Info className={cn("h-4 w-4 mr-2", showError ? "text-destructive" : "text-primary")} />
-          <span className="text-sm font-medium">
-            {showError ? "Please select at least one option to continue" : "Select at least one option before continuing"}
-          </span>
-        </Alert>
-      )}
-
       {currentPage === 0 && (
         <div className="flex flex-col space-y-6 py-2">
           {steps.map((item, index) => (
@@ -258,7 +240,11 @@ export const ExplainerScreen: React.FC<ExplainerScreenProps> = ({ onNext, onBack
         <Button 
           variant="default" 
           onClick={nextPage}
-          className="transition-transform duration-200 hover:translate-x-1"
+          disabled={currentPage === 1 && !hasSelections}
+          className={cn(
+            "transition-transform duration-200",
+            !(currentPage === 1 && !hasSelections) && "hover:translate-x-1"
+          )}
         >
           {currentPage === 1 ? "Continue" : "Next"}
           <ArrowRight className="w-4 h-4 ml-2" />
