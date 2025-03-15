@@ -2,10 +2,11 @@
 import React, { useState, useEffect } from 'react';
 import { useRecorder } from '@/hooks/useRecorder';
 import { Button } from '@/components/ui/button';
-import { Mic, StopCircle, PlayCircle, PauseCircle, RotateCcw, Timer, CheckCircle } from 'lucide-react';
+import { Mic, StopCircle, PlayCircle, PauseCircle, RotateCcw, CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useApp } from '@/contexts/AppContext';
 import AudioWaveform from './AudioWaveform';
+import { Slider } from '@/components/ui/slider';
 
 interface AudioRecorderProps {
   onRecordingComplete: (blob: Blob, url: string, duration: number) => void;
@@ -19,15 +20,37 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({ onRecordingComplet
     audioBlob, 
     audioUrl, 
     error,
+    isPlaying,
     startRecording, 
     stopRecording, 
-    resetRecording 
+    resetRecording,
+    playRecording,
+    pauseRecording
   } = useRecorder();
   
   const [formattedTime, setFormattedTime] = useState("00:00");
+  const [currentPermission, setCurrentPermission] = useState<PermissionState | null>(null);
   
   useEffect(() => {
-    if (durationSec) {
+    // Check microphone permission status
+    const checkMicrophonePermission = async () => {
+      try {
+        const permissionStatus = await navigator.permissions.query({ name: 'microphone' as PermissionName });
+        setCurrentPermission(permissionStatus.state);
+        
+        permissionStatus.onchange = () => {
+          setCurrentPermission(permissionStatus.state);
+        };
+      } catch (error) {
+        console.error('Error checking microphone permission:', error);
+      }
+    };
+    
+    checkMicrophonePermission();
+  }, []);
+  
+  useEffect(() => {
+    if (durationSec !== undefined) {
       const minutes = Math.floor(durationSec / 60);
       const seconds = durationSec % 60;
       setFormattedTime(`${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
@@ -61,6 +84,7 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({ onRecordingComplet
               onClick={startRecording}
               className="red-record-button animate-scale-in"
               aria-label="Start recording"
+              disabled={currentPermission === 'denied'}
             />
           )}
           
@@ -85,6 +109,26 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({ onRecordingComplet
                 <RotateCcw className="h-8 w-8" />
               </Button>
               
+              {isPlaying ? (
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="w-16 h-16 rounded-full border-2"
+                  onClick={pauseRecording}
+                >
+                  <PauseCircle className="h-8 w-8" />
+                </Button>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="w-16 h-16 rounded-full border-2"
+                  onClick={playRecording}
+                >
+                  <PlayCircle className="h-8 w-8" />
+                </Button>
+              )}
+              
               <Button
                 variant="default"
                 size="icon"
@@ -97,6 +141,12 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({ onRecordingComplet
           )}
         </div>
       </div>
+      
+      {currentPermission === 'denied' && (
+        <div className="text-destructive text-center mt-4 mb-4">
+          Microphone access is blocked. Please allow microphone access in your browser settings.
+        </div>
+      )}
       
       {error && (
         <div className="text-destructive text-center mt-4">{error}</div>

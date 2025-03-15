@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useApp } from '@/contexts/AppContext';
 import AudioWaveform from './AudioWaveform';
@@ -7,13 +7,16 @@ import { Button } from '@/components/ui/button';
 import { ChevronLeft, Play, Pause, Share2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Analysis from './Analysis';
+import { Slider } from '@/components/ui/slider';
 
 export const RecordingDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { recordings, setSelectedRecordingId } = useApp();
   const [isPlaying, setIsPlaying] = useState(false);
-  const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
+  const [currentTime, setCurrentTime] = useState(0);
+  const audioElement = useRef<HTMLAudioElement | null>(null);
+  const progressInterval = useRef<ReturnType<typeof setInterval> | null>(null);
   
   const recording = recordings.find(r => r.id === id);
   
@@ -23,37 +26,76 @@ export const RecordingDetail: React.FC = () => {
     }
     
     return () => {
-      if (audioElement) {
-        audioElement.pause();
+      if (audioElement.current) {
+        audioElement.current.pause();
+      }
+      if (progressInterval.current) {
+        clearInterval(progressInterval.current);
       }
     };
   }, [id, setSelectedRecordingId]);
   
   useEffect(() => {
-    if (recording?.audioUrl && !audioElement) {
+    if (recording?.audioUrl && !audioElement.current) {
       const audio = new Audio(recording.audioUrl);
       
-      audio.addEventListener('play', () => setIsPlaying(true));
-      audio.addEventListener('pause', () => setIsPlaying(false));
-      audio.addEventListener('ended', () => setIsPlaying(false));
+      audio.addEventListener('play', () => {
+        setIsPlaying(true);
+        if (progressInterval.current) {
+          clearInterval(progressInterval.current);
+        }
+        progressInterval.current = setInterval(() => {
+          setCurrentTime(audio.currentTime);
+        }, 100);
+      });
       
-      setAudioElement(audio);
+      audio.addEventListener('pause', () => {
+        setIsPlaying(false);
+        if (progressInterval.current) {
+          clearInterval(progressInterval.current);
+        }
+      });
+      
+      audio.addEventListener('ended', () => {
+        setIsPlaying(false);
+        setCurrentTime(0);
+        if (progressInterval.current) {
+          clearInterval(progressInterval.current);
+        }
+      });
+      
+      audio.addEventListener('loadedmetadata', () => {
+        // Initialize with proper duration
+      });
+      
+      audioElement.current = audio;
       
       return () => {
         audio.pause();
         audio.src = '';
+        if (progressInterval.current) {
+          clearInterval(progressInterval.current);
+        }
       };
     }
-  }, [recording, audioElement]);
+  }, [recording]);
   
   const handlePlayPause = () => {
-    if (!audioElement) return;
+    if (!audioElement.current) return;
     
     if (isPlaying) {
-      audioElement.pause();
+      audioElement.current.pause();
     } else {
-      audioElement.play();
+      audioElement.current.play();
     }
+  };
+  
+  const handleSeek = (value: number[]) => {
+    if (!audioElement.current || !recording) return;
+    
+    const seekTime = value[0];
+    audioElement.current.currentTime = seekTime;
+    setCurrentTime(seekTime);
   };
   
   const formatDate = (timestamp: number) => {
@@ -118,19 +160,36 @@ export const RecordingDetail: React.FC = () => {
             className="mb-4"
           />
           
-          <div className="flex justify-center">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="w-12 h-12 rounded-full"
-              onClick={handlePlayPause}
-            >
-              {isPlaying ? (
-                <Pause className="h-6 w-6" />
-              ) : (
-                <Play className="h-6 w-6 ml-1" />
-              )}
-            </Button>
+          <div className="flex flex-col space-y-4">
+            {recording.duration > 0 && (
+              <div className="px-4">
+                <Slider
+                  value={[currentTime]}
+                  max={recording.duration}
+                  step={0.1}
+                  onValueChange={handleSeek}
+                />
+                <div className="flex justify-between text-sm text-muted-foreground mt-1">
+                  <span>{formatDuration(Math.floor(currentTime))}</span>
+                  <span>{formatDuration(recording.duration)}</span>
+                </div>
+              </div>
+            )}
+            
+            <div className="flex justify-center">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="w-12 h-12 rounded-full"
+                onClick={handlePlayPause}
+              >
+                {isPlaying ? (
+                  <Pause className="h-6 w-6" />
+                ) : (
+                  <Play className="h-6 w-6 ml-1" />
+                )}
+              </Button>
+            </div>
           </div>
         </div>
         

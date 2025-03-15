@@ -18,23 +18,82 @@ export const VoiceRecognitionScreen: React.FC<VoiceRecognitionScreenProps> = ({
 }) => {
   const [isListening, setIsListening] = useState(false);
   const [voiceRecognized, setVoiceRecognized] = useState(false);
-  const recognizeVoiceTimeout = useRef<NodeJS.Timeout | null>(null);
+  const [currentPermission, setCurrentPermission] = useState<PermissionState | null>(null);
+  const mediaRecorder = useRef<MediaRecorder | null>(null);
+  const stream = useRef<MediaStream | null>(null);
+  const audioChunks = useRef<Blob[]>([]);
+  const recognizeTimeout = useRef<NodeJS.Timeout | null>(null);
   
   useEffect(() => {
+    // Check microphone permission status
+    const checkMicrophonePermission = async () => {
+      try {
+        const permissionStatus = await navigator.permissions.query({ name: 'microphone' as PermissionName });
+        setCurrentPermission(permissionStatus.state);
+        
+        permissionStatus.onchange = () => {
+          setCurrentPermission(permissionStatus.state);
+        };
+      } catch (error) {
+        console.error('Error checking microphone permission:', error);
+      }
+    };
+    
+    checkMicrophonePermission();
+    
     return () => {
-      if (recognizeVoiceTimeout.current) {
-        clearTimeout(recognizeVoiceTimeout.current);
+      if (recognizeTimeout.current) {
+        clearTimeout(recognizeTimeout.current);
+      }
+      
+      if (stream.current) {
+        stream.current.getTracks().forEach(track => track.stop());
       }
     };
   }, []);
   
-  const handleVoiceRecognition = () => {
-    setIsListening(true);
-    
-    recognizeVoiceTimeout.current = setTimeout(() => {
+  const handleVoiceRecognition = async () => {
+    try {
+      audioChunks.current = [];
+      
+      if (!stream.current) {
+        stream.current = await navigator.mediaDevices.getUserMedia({ audio: true });
+      }
+      
+      mediaRecorder.current = new MediaRecorder(stream.current);
+      
+      mediaRecorder.current.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunks.current.push(event.data);
+        }
+      };
+      
+      mediaRecorder.current.onstop = () => {
+        // Process audio if needed
+        setIsListening(false);
+        setVoiceRecognized(true);
+      };
+      
+      setIsListening(true);
+      mediaRecorder.current.start();
+      
+      // Record for 3 seconds then stop
+      recognizeTimeout.current = setTimeout(() => {
+        if (mediaRecorder.current && mediaRecorder.current.state === 'recording') {
+          mediaRecorder.current.stop();
+          
+          if (stream.current) {
+            stream.current.getTracks().forEach(track => track.stop());
+            stream.current = null;
+          }
+        }
+      }, 3000);
+    } catch (error) {
+      console.error('Error accessing microphone:', error);
+      // If we can't access the microphone, just pretend it worked
       setIsListening(false);
       setVoiceRecognized(true);
-    }, 3000);
+    }
   };
   
   const handleNext = () => {
@@ -80,6 +139,12 @@ export const VoiceRecognitionScreen: React.FC<VoiceRecognitionScreenProps> = ({
                 : "Let's have your first practice conversation"}
           </p>
         </div>
+        
+        {currentPermission === 'denied' && (
+          <div className="text-destructive text-center">
+            Microphone access is blocked. Please allow microphone access in your browser settings.
+          </div>
+        )}
       </div>
       <div className="flex justify-between items-center mt-8">
         <Button 

@@ -8,6 +8,7 @@ interface RecorderState {
   audioBlob: Blob | null;
   audioUrl: string | null;
   error: string | null;
+  isPlaying: boolean;
 }
 
 export const useRecorder = () => {
@@ -18,6 +19,7 @@ export const useRecorder = () => {
     audioBlob: null,
     audioUrl: null,
     error: null,
+    isPlaying: false,
   });
   
   const mediaRecorder = useRef<MediaRecorder | null>(null);
@@ -25,6 +27,7 @@ export const useRecorder = () => {
   const timerInterval = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTime = useRef<number>(0);
   const stream = useRef<MediaStream | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   
   const startRecording = async () => {
     try {
@@ -46,7 +49,26 @@ export const useRecorder = () => {
         const audioBlob = new Blob(audioChunks.current, { type: 'audio/wav' });
         const audioUrl = URL.createObjectURL(audioBlob);
         
-        setRecorderState((prev) => ({
+        if (audioRef.current) {
+          audioRef.current.src = audioUrl;
+          audioRef.current.load();
+        } else {
+          audioRef.current = new Audio(audioUrl);
+          
+          audioRef.current.addEventListener('play', () => {
+            setRecorderState(prev => ({ ...prev, isPlaying: true }));
+          });
+          
+          audioRef.current.addEventListener('pause', () => {
+            setRecorderState(prev => ({ ...prev, isPlaying: false }));
+          });
+          
+          audioRef.current.addEventListener('ended', () => {
+            setRecorderState(prev => ({ ...prev, isPlaying: false }));
+          });
+        }
+        
+        setRecorderState(prev => ({
           ...prev,
           audioBlob,
           audioUrl,
@@ -59,7 +81,7 @@ export const useRecorder = () => {
       
       timerInterval.current = setInterval(() => {
         const durationSec = Math.floor((Date.now() - startTime.current) / 1000);
-        setRecorderState((prev) => ({ ...prev, durationSec }));
+        setRecorderState(prev => ({ ...prev, durationSec }));
       }, 1000);
       
       setRecorderState({
@@ -69,10 +91,11 @@ export const useRecorder = () => {
         audioBlob: null,
         audioUrl: null,
         error: null,
+        isPlaying: false,
       });
     } catch (error) {
       console.error('Error starting recording:', error);
-      setRecorderState((prev) => ({
+      setRecorderState(prev => ({
         ...prev,
         error: 'Could not access microphone. Please allow microphone permissions.',
       }));
@@ -99,6 +122,12 @@ export const useRecorder = () => {
       URL.revokeObjectURL(recorderState.audioUrl);
     }
     
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.src = '';
+      audioRef.current = null;
+    }
+    
     setRecorderState({
       isRecording: false,
       isPaused: false,
@@ -106,7 +135,20 @@ export const useRecorder = () => {
       audioBlob: null,
       audioUrl: null,
       error: null,
+      isPlaying: false,
     });
+  };
+  
+  const playRecording = () => {
+    if (audioRef.current && !recorderState.isPlaying) {
+      audioRef.current.play();
+    }
+  };
+  
+  const pauseRecording = () => {
+    if (audioRef.current && recorderState.isPlaying) {
+      audioRef.current.pause();
+    }
   };
   
   useEffect(() => {
@@ -126,6 +168,11 @@ export const useRecorder = () => {
       if (recorderState.audioUrl) {
         URL.revokeObjectURL(recorderState.audioUrl);
       }
+      
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
     };
   }, [recorderState.audioUrl, recorderState.isRecording]);
   
@@ -134,5 +181,7 @@ export const useRecorder = () => {
     startRecording,
     stopRecording,
     resetRecording,
+    playRecording,
+    pauseRecording,
   };
 };
