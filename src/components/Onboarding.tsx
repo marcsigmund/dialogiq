@@ -45,7 +45,7 @@ export const Onboarding: React.FC = () => {
               : step === OnboardingStep.EXPLAINER 
                 ? "How it works"
                 : step === OnboardingStep.VOICE_RECOGNITION 
-                  ? "Let's recognize your voice first" 
+                  ? "Start your first conversation" 
                   : "What would you like to practice today?"}
           </p>
         </div>

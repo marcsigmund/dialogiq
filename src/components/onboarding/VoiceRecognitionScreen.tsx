@@ -66,21 +66,21 @@ export const VoiceRecognitionScreen: React.FC<VoiceRecognitionScreenProps> = ({
         <div className="text-center">
           <p className="font-medium text-lg mb-1">
             {voiceRecognized 
-              ? "Voice recognized!" 
+              ? "Voice recorded successfully!" 
               : isListening 
                 ? "Listening..." 
-                : "Tap to recognize your voice"}
+                : "Tap to start improving"}
           </p>
           <p className="text-sm text-muted-foreground">
             {voiceRecognized 
-              ? "You can now proceed to the next step" 
+              ? "You're ready for your first conversation" 
               : isListening 
                 ? "Please speak naturally for a few seconds" 
-                : "This helps us optimize the analysis for you"}
+                : "Let's have your first practice conversation"}
           </p>
         </div>
       </div>
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center mt-8">
         <Button 
           variant="ghost" 
           onClick={onBack}
