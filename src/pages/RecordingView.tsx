@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 import { useApp } from '@/contexts/AppContext';
@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ChevronLeft } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const RecordingView: React.FC = () => {
   const navigate = useNavigate();
@@ -20,6 +21,24 @@ const RecordingView: React.FC = () => {
     duration: number;
   } | null>(null);
   const { toast } = useToast();
+  const isMobile = useIsMobile();
+  
+  useEffect(() => {
+    // Prevent screen from sleeping during recording
+    if ((window as any).Capacitor?.isNativePlatform()) {
+      const preventSleep = async () => {
+        try {
+          // This would require installing a screen wake lock plugin
+          // For a real implementation, add the appropriate Capacitor plugin
+          console.log('Would prevent screen from sleeping on native');
+        } catch (err) {
+          console.error('Failed to keep screen awake:', err);
+        }
+      };
+      
+      preventSleep();
+    }
+  }, []);
   
   const handleRecordingComplete = (blob: Blob, url: string, duration: number) => {
     setRecordingInfo({ blob, url, duration });
@@ -50,8 +69,8 @@ const RecordingView: React.FC = () => {
   };
   
   return (
-    <div className="min-h-screen flex flex-col animate-fade-in">
-      <header className="p-4 flex items-center">
+    <div className="min-h-screen flex flex-col animate-fade-in mobile-safe-area">
+      <header className={`p-4 flex items-center ${isMobile ? 'pt-8' : ''}`}>
         <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
           <ChevronLeft className="h-6 w-6" />
         </Button>

@@ -45,6 +45,15 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-feature-settings: "rlig" 1, "calt" 1;
+    /* Safe area insets for mobile */
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+    /* Prevent overscroll bounce effect */
+    overscroll-behavior: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
   }
 }
 
@@ -88,5 +97,20 @@
   
   .ios-input {
     @apply bg-app-gray-light px-4 py-3 rounded-lg text-black w-full focus:outline-none focus:ring-2 focus:ring-app-blue;
+  }
+  
+  /* Mobile-specific styles */
+  .mobile-safe-area {
+    @apply pt-[env(safe-area-inset-top)] 
+           pb-[env(safe-area-inset-bottom)] 
+           pl-[env(safe-area-inset-left)] 
+           pr-[env(safe-area-inset-right)];
+  }
+  
+  .mobile-bottom-tab {
+    @apply fixed bottom-0 left-0 right-0 
+           bg-white border-t border-gray-200 
+           flex justify-around items-center 
+           pb-[env(safe-area-inset-bottom)] pt-3;
   }
 }
