@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form';
 import { useForm } from 'react-hook-form';
-import { LanguageSelector } from './LanguageSelector';
+import { LanguageSelector, availableLanguages } from './LanguageSelector';
 
 const steps = [
   {
