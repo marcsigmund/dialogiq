@@ -28,6 +28,13 @@ export async function uploadAudio(audioBlob: Blob): Promise<any> {
       throw new Error(`API request failed with status ${response.status}`);
     }
 
+    // Check if the response is HTML instead of JSON
+    const contentType = response.headers.get("content-type");
+    if (contentType && contentType.includes("text/html")) {
+      console.error("Received HTML response instead of JSON");
+      throw new Error("Invalid response format: received HTML instead of JSON");
+    }
+
     return await response.json();
   } catch (error) {
     console.error("Error uploading audio:", error);
@@ -50,10 +57,23 @@ export async function checkProcessStatus(processId: string): Promise<any> {
       throw new Error(`Status check failed with status ${response.status}`);
     }
 
+    // Check if the response is HTML instead of JSON
+    const contentType = response.headers.get("content-type");
+    if (contentType && contentType.includes("text/html")) {
+      console.error("Received HTML response instead of JSON");
+      return { 
+        status: "failed", 
+        error: "Invalid response format: received HTML instead of JSON" 
+      };
+    }
+
     return await response.json();
   } catch (error) {
     console.error("Error checking process status:", error);
-    throw error;
+    return { 
+      status: "failed", 
+      error: error instanceof Error ? error.message : "Unknown error" 
+    };
   }
 }
 
