@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, ArrowLeft, MessageSquare, Volume2, Sparkles, Users, Languages, Briefcase, Heart } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -71,7 +71,30 @@ interface ExplainerScreenProps {
 export const ExplainerScreen: React.FC<ExplainerScreenProps> = ({ onNext, onBack }) => {
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState<number>(0);
+  const [activeStepIndex, setActiveStepIndex] = useState<number>(-1);
   const form = useForm();
+
+  // Animation effect for steps
+  useEffect(() => {
+    if (currentPage === 0) {
+      const timer = setTimeout(() => {
+        setActiveStepIndex(0);
+      }, 300);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [currentPage]);
+
+  // Increment active step with delay
+  useEffect(() => {
+    if (activeStepIndex >= 0 && activeStepIndex < steps.length - 1) {
+      const timer = setTimeout(() => {
+        setActiveStepIndex(activeStepIndex + 1);
+      }, 400);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [activeStepIndex]);
 
   const toggleInterest = (id: string) => {
     setSelectedInterests(prev => 
@@ -84,6 +107,8 @@ export const ExplainerScreen: React.FC<ExplainerScreenProps> = ({ onNext, onBack
   const nextPage = () => {
     if (currentPage < 1) {
       setCurrentPage(currentPage + 1);
+      // Reset animation state when going to next page
+      setActiveStepIndex(-1);
     } else {
       onNext();
     }
@@ -92,6 +117,10 @@ export const ExplainerScreen: React.FC<ExplainerScreenProps> = ({ onNext, onBack
   const prevPage = () => {
     if (currentPage > 0) {
       setCurrentPage(currentPage - 1);
+      // Reset animation when going back
+      setActiveStepIndex(-1);
+      // Start animation sequence again after a short delay
+      setTimeout(() => setActiveStepIndex(0), 300);
     } else {
       onBack();
     }
@@ -100,11 +129,23 @@ export const ExplainerScreen: React.FC<ExplainerScreenProps> = ({ onNext, onBack
   return (
     <div className="space-y-6">
       {currentPage === 0 && (
-        <div className="flex flex-col space-y-6 py-2 animate-in slide-in-from-right">
+        <div className="flex flex-col space-y-6 py-2">
           {steps.map((item, index) => (
-            <div key={index} className="flex items-start space-x-4">
-              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                <div className="absolute -ml-2 -mt-2 w-5 h-5 rounded-full bg-primary text-white flex items-center justify-center text-xs font-medium">
+            <div 
+              key={index} 
+              className={cn(
+                "flex items-start space-x-4 transition-all duration-500 transform", 
+                activeStepIndex >= index 
+                  ? "opacity-100 translate-x-0" 
+                  : "opacity-0 translate-x-8"
+              )}
+              style={{ transitionDelay: `${index * 100}ms` }}
+            >
+              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary relative">
+                <div className={cn(
+                  "absolute -ml-2 -mt-2 w-5 h-5 rounded-full bg-primary text-white flex items-center justify-center text-xs font-medium transform transition-all duration-500",
+                  activeStepIndex >= index ? "scale-100" : "scale-0"
+                )}>
                   {index + 1}
                 </div>
                 {item.icon}
@@ -124,15 +165,16 @@ export const ExplainerScreen: React.FC<ExplainerScreenProps> = ({ onNext, onBack
             <h3 className="font-medium text-base mb-3">What would you like to focus on?</h3>
             <p className="text-sm text-muted-foreground mb-4">Select all that apply</p>
             <div className="grid gap-3">
-              {interests.map((interest) => (
+              {interests.map((interest, index) => (
                 <div
                   key={interest.id}
                   className={cn(
-                    "p-3 rounded-lg border transition-all cursor-pointer flex items-center gap-3",
+                    "p-3 rounded-lg border transition-all cursor-pointer flex items-center gap-3 animate-in fade-in",
                     selectedInterests.includes(interest.id) 
                       ? "border-primary bg-primary/5" 
                       : "border-border hover:border-muted-foreground/50"
                   )}
+                  style={{ animationDelay: `${index * 100}ms` }}
                   onClick={() => toggleInterest(interest.id)}
                 >
                   <div className="flex items-center gap-2">
@@ -142,7 +184,7 @@ export const ExplainerScreen: React.FC<ExplainerScreenProps> = ({ onNext, onBack
                       className="data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
                     />
                     <div className={cn(
-                      "p-2 rounded-full",
+                      "p-2 rounded-full transition-colors duration-200",
                       selectedInterests.includes(interest.id) ? "bg-primary text-primary-foreground" : "bg-muted"
                     )}>
                       {interest.icon}
@@ -157,7 +199,7 @@ export const ExplainerScreen: React.FC<ExplainerScreenProps> = ({ onNext, onBack
             </div>
           </div>
 
-          <div className="pt-4 border-t">
+          <div className="pt-4 border-t animate-in fade-in" style={{ animationDelay: "300ms" }}>
             <h3 className="font-medium text-base mb-3">Which languages do you want to improve?</h3>
             <Form {...form}>
               <FormField
@@ -190,11 +232,11 @@ export const ExplainerScreen: React.FC<ExplainerScreenProps> = ({ onNext, onBack
         </div>
       )}
 
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center pt-4 mt-auto">
         <Button 
           variant="ghost" 
           onClick={prevPage}
-          className="text-muted-foreground"
+          className="text-muted-foreground transition-all duration-200 hover:text-foreground"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back
@@ -202,6 +244,7 @@ export const ExplainerScreen: React.FC<ExplainerScreenProps> = ({ onNext, onBack
         <Button 
           variant="default" 
           onClick={nextPage}
+          className="transition-transform duration-200 hover:translate-x-1"
         >
           {currentPage === 1 ? "Next" : "Continue"}
           <ArrowRight className="w-4 h-4 ml-2" />
