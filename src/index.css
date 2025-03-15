@@ -165,7 +165,7 @@
 
   /* Safe area padding for notches and home indicators */
   .safe-area-padding {
-    @apply pt-safe pb-safe pl-safe pr-safe;
+    @apply pt-safe-top pb-safe-bottom pl-safe-left pr-safe-right;
   }
 }
 

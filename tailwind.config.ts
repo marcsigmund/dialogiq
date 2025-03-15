@@ -1,4 +1,3 @@
-
 import type { Config } from "tailwindcss";
 
 export default {
@@ -130,7 +129,14 @@ export default {
         'wave-3': 'wave 1.7s infinite ease-in-out 0.2s',
         'wave-4': 'wave 1.9s infinite ease-in-out 0.3s',
         'wave-5': 'wave 2.1s infinite ease-in-out 0.4s',
-			}
+			},
+      padding: {
+        'safe': 'env(safe-area-inset-bottom)',
+        'safe-top': 'env(safe-area-inset-top)',
+        'safe-bottom': 'env(safe-area-inset-bottom)',
+        'safe-left': 'env(safe-area-inset-left)',
+        'safe-right': 'env(safe-area-inset-right)',
+      }
 		}
 	},
 	plugins: [require("tailwindcss-animate")],

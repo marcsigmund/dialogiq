@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { useApp } from '@/contexts/AppContext';
 import { Button } from '@/components/ui/button';
@@ -35,13 +34,11 @@ export const Onboarding: React.FC = () => {
   const [voiceRecognized, setVoiceRecognized] = useState(false);
   const isMobile = useIsMobile();
   
-  // Voice recognition simulation for demo purposes
   const recognizeVoiceTimeout = useRef<NodeJS.Timeout | null>(null);
   
   const handleVoiceRecognition = () => {
     setIsListening(true);
     
-    // Simulate voice recognition with a timeout
     recognizeVoiceTimeout.current = setTimeout(() => {
       setIsListening(false);
       setVoiceRecognized(true);
@@ -58,7 +55,6 @@ export const Onboarding: React.FC = () => {
     } else if (step === 1 && voiceRecognized) {
       setStep(2); // Move from voice recognition to use case selection
     } else if (step === 2 && selectedUseCase) {
-      // Complete onboarding
       setUseCase(selectedUseCase as any);
       setIsOnboarded(true);
     }
@@ -76,7 +72,6 @@ export const Onboarding: React.FC = () => {
   const handleBack = () => {
     if (step === 1) {
       setStep(0); // Go back to intro from voice recognition
-      // Reset voice recognition state if needed
       if (isListening && recognizeVoiceTimeout.current) {
         clearTimeout(recognizeVoiceTimeout.current);
         setIsListening(false);
@@ -211,7 +206,7 @@ export const Onboarding: React.FC = () => {
         
         <div className="flex justify-between items-center">
           {step === 0 ? (
-            <div className="w-20"></div> // Empty spacer for alignment
+            <div className="w-20"></div>
           ) : (
             <Button 
               variant="ghost" 
