@@ -1,9 +1,14 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, ArrowLeft, MessageSquare, Volume2, Sparkles } from 'lucide-react';
+import { ArrowRight, ArrowLeft, MessageSquare, Volume2, Sparkles, Users } from 'lucide-react';
 
 const steps = [
+  {
+    icon: <Users className="w-6 h-6" />,
+    title: "Find a conversation partner",
+    description: "Choose a partner you're comfortable with to practice and improve your language skills"
+  },
   {
     icon: <MessageSquare className="w-6 h-6" />,
     title: "Start a conversation",
@@ -30,8 +35,6 @@ export const ExplainerScreen: React.FC<ExplainerScreenProps> = ({ onNext, onBack
   return (
     <>
       <div className="flex flex-col space-y-6 py-2">
-        <h2 className="text-xl font-medium text-center mb-2">How it works</h2>
-        
         {steps.map((item, index) => (
           <div key={index} className="flex items-start space-x-4">
             <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
