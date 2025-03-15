@@ -2,7 +2,7 @@
 import React, { useState, useRef } from 'react';
 import { useApp } from '@/contexts/AppContext';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Mic, CheckCircle, MessageSquare, Sparkles, VolumeUp } from 'lucide-react';
+import { ArrowRight, Mic, CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const useCases = [
@@ -28,7 +28,7 @@ const useCases = [
 
 export const Onboarding: React.FC = () => {
   const { setIsOnboarded, setUseCase } = useApp();
-  const [step, setStep] = useState(0); // Changed to start at 0 for intro screen
+  const [step, setStep] = useState(1);
   const [isListening, setIsListening] = useState(false);
   const [selectedUseCase, setSelectedUseCase] = useState<string | null>(null);
   const [voiceRecognized, setVoiceRecognized] = useState(false);
@@ -51,9 +51,7 @@ export const Onboarding: React.FC = () => {
   };
   
   const handleNext = () => {
-    if (step === 0) {
-      setStep(1);
-    } else if (step === 1 && voiceRecognized) {
+    if (step === 1 && voiceRecognized) {
       setStep(2);
     } else if (step === 2 && selectedUseCase) {
       // Complete onboarding
@@ -63,61 +61,11 @@ export const Onboarding: React.FC = () => {
   };
   
   const handleSkip = () => {
-    if (step === 0) {
-      setStep(1);
-    } else if (step === 1) {
+    if (step === 1) {
       setVoiceRecognized(true);
       setStep(2);
     }
   };
-
-  const renderIntroScreen = () => (
-    <div className="flex flex-col items-center space-y-8">
-      <div className="text-center">
-        <div className="flex justify-center mb-6">
-          <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center">
-            <MessageSquare className="w-12 h-12 text-primary" />
-          </div>
-        </div>
-        <h2 className="text-2xl font-semibold mb-4">Welcome to DialogIQ</h2>
-        <p className="text-muted-foreground mb-6">
-          Your personal conversation analysis and training assistant
-        </p>
-      </div>
-
-      <div className="space-y-6 w-full">
-        <div className="flex items-start space-x-4">
-          <div className="bg-primary/10 p-2 rounded-full">
-            <VolumeUp className="w-5 h-5 text-primary" />
-          </div>
-          <div>
-            <h3 className="font-medium">Record & Review</h3>
-            <p className="text-sm text-muted-foreground">Record your voice for instant analysis and feedback</p>
-          </div>
-        </div>
-        
-        <div className="flex items-start space-x-4">
-          <div className="bg-primary/10 p-2 rounded-full">
-            <Sparkles className="w-5 h-5 text-primary" />
-          </div>
-          <div>
-            <h3 className="font-medium">Personalized Insights</h3>
-            <p className="text-sm text-muted-foreground">Get detailed analysis of your speech patterns and areas for improvement</p>
-          </div>
-        </div>
-        
-        <div className="flex items-start space-x-4">
-          <div className="bg-primary/10 p-2 rounded-full">
-            <MessageSquare className="w-5 h-5 text-primary" />
-          </div>
-          <div>
-            <h3 className="font-medium">Multiple Use Cases</h3>
-            <p className="text-sm text-muted-foreground">Practice language skills, sales pitches, interviews, and more</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
   
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4">
@@ -125,18 +73,14 @@ export const Onboarding: React.FC = () => {
         <div className="text-center mb-8">
           <h1 className="text-3xl font-semibold mb-2">DialogIQ</h1>
           <p className="text-muted-foreground">
-            {step === 0 
-              ? "Your conversation coach"
-              : step === 1 
-                ? "Let's recognize your voice first" 
-                : "What would you like to practice today?"}
+            {step === 1 
+              ? "Let's recognize your voice first" 
+              : "What would you like to practice today?"}
           </p>
         </div>
         
         <div className="glass-panel p-6 mb-6">
-          {step === 0 ? (
-            renderIntroScreen()
-          ) : step === 1 ? (
+          {step === 1 ? (
             <div className="flex flex-col items-center space-y-6">
               <div 
                 className={cn(
@@ -203,7 +147,7 @@ export const Onboarding: React.FC = () => {
         </div>
         
         <div className="flex justify-between items-center">
-          {(step === 0 || step === 1) && (
+          {step === 1 && (
             <Button 
               variant="link" 
               onClick={handleSkip}
