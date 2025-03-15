@@ -71,6 +71,9 @@ export const RecordingList: React.FC = () => {
       <header className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">DialogIQ</h1>
         <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" onClick={() => navigate('/new-recording')}>
+            <Plus className="h-6 w-6" />
+          </Button>
           <Sheet>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="rounded-full" aria-label="Account">
@@ -101,9 +104,6 @@ export const RecordingList: React.FC = () => {
               </div>
             </SheetContent>
           </Sheet>
-          <Button variant="ghost" size="icon" onClick={() => navigate('/new-recording')}>
-            <Plus className="h-6 w-6" />
-          </Button>
         </div>
       </header>
       
