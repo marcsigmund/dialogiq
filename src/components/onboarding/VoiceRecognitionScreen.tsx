@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { Slider } from "@/components/ui/slider";
 import { uploadAudio, pollProcessStatus } from "@/lib/api";
 import { useToast } from "@/components/ui/use-toast";
+import { LiveAudioVisualizer } from "react-audio-visualize";
 
 interface VoiceRecognitionScreenProps {
   onNext: () => void;
@@ -34,6 +35,8 @@ export const VoiceRecognitionScreen: React.FC<VoiceRecognitionScreenProps> = ({
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [mediaRecorderState, setMediaRecorderState] =
+    useState<MediaRecorder | null>(null);
 
   const mediaRecorder = useRef<MediaRecorder | null>(null);
   const stream = useRef<MediaStream | null>(null);
@@ -122,6 +125,7 @@ export const VoiceRecognitionScreen: React.FC<VoiceRecognitionScreenProps> = ({
       }
 
       mediaRecorder.current = new MediaRecorder(stream.current);
+      setMediaRecorderState(mediaRecorder.current);
 
       mediaRecorder.current.ondataavailable = (event) => {
         if (event.data.size > 0) {
@@ -138,6 +142,7 @@ export const VoiceRecognitionScreen: React.FC<VoiceRecognitionScreenProps> = ({
         setAudioUrl(url);
         setIsListening(false);
         setVoiceRecognized(true);
+        setMediaRecorderState(null);
 
         // Upload the audio recording to the API
         handleUploadAudio(newAudioBlob);
@@ -145,18 +150,19 @@ export const VoiceRecognitionScreen: React.FC<VoiceRecognitionScreenProps> = ({
 
       setIsListening(true);
       mediaRecorder.current.start();
-      // We no longer set a timeout to automatically stop recording
     } catch (error) {
       console.error("Error accessing microphone:", error);
       // If we can't access the microphone, just pretend it worked
       setIsListening(false);
       setVoiceRecognized(true);
+      setMediaRecorderState(null);
     }
   };
 
   const handleStopRecording = () => {
     if (mediaRecorder.current && mediaRecorder.current.state === "recording") {
       mediaRecorder.current.stop();
+      setMediaRecorderState(null);
 
       if (stream.current) {
         stream.current.getTracks().forEach((track) => track.stop());
@@ -272,6 +278,42 @@ export const VoiceRecognitionScreen: React.FC<VoiceRecognitionScreenProps> = ({
   return (
     <>
       <div className="flex flex-col items-center space-y-6">
+        {/* Live Audio Visualizer for recording */}
+        {isListening && mediaRecorderState && (
+          <div className="w-full max-w-xs mx-auto mb-4">
+            <div
+              className="audio-visualizer-container rounded-lg overflow-hidden"
+              style={{ height: "80px", background: "rgba(239, 68, 68, 0.05)" }}
+            >
+              <LiveAudioVisualizer
+                mediaRecorder={mediaRecorderState}
+                width={300}
+                height={80}
+                barWidth={2}
+                gap={1}
+                barColor="url(#recordingGradient)"
+                backgroundColor="transparent"
+              />
+              {/* Gradient definition for recording state */}
+              <svg style={{ position: "absolute", width: 0, height: 0 }}>
+                <defs>
+                  <linearGradient
+                    id="recordingGradient"
+                    x1="0"
+                    y1="0"
+                    x2="0"
+                    y2="1"
+                  >
+                    <stop offset="0%" stopColor="#f87171" />
+                    <stop offset="50%" stopColor="#ef4444" />
+                    <stop offset="100%" stopColor="#dc2626" />
+                  </linearGradient>
+                </defs>
+              </svg>
+            </div>
+          </div>
+        )}
+
         <div
           className={cn(
             "w-32 h-32 rounded-full flex items-center justify-center transition-all duration-300",
