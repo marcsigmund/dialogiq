@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '@/contexts/AppContext';
 import { Button } from '@/components/ui/button';
-import { Search, Plus, Trash2, MoreVertical } from 'lucide-react';
+import { Search, Plus, Trash2, MoreVertical, User } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import {
@@ -13,6 +13,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 export const RecordingList: React.FC = () => {
   const navigate = useNavigate();
@@ -61,9 +70,41 @@ export const RecordingList: React.FC = () => {
     <div className="p-4 animate-fade-in">
       <header className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">DialogIQ</h1>
-        <Button variant="ghost" size="icon" onClick={() => navigate('/new-recording')}>
-          <Plus className="h-6 w-6" />
-        </Button>
+        <div className="flex items-center gap-2">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="rounded-full" aria-label="Account">
+                <Avatar className="h-9 w-9 border border-muted">
+                  <AvatarFallback>
+                    <User className="h-5 w-5" />
+                  </AvatarFallback>
+                </Avatar>
+              </Button>
+            </SheetTrigger>
+            <SheetContent>
+              <SheetHeader>
+                <SheetTitle>Account</SheetTitle>
+                <SheetDescription>
+                  Manage your DialogIQ account settings
+                </SheetDescription>
+              </SheetHeader>
+              <div className="py-6 space-y-4">
+                <div className="space-y-2">
+                  <h3 className="text-sm font-medium">Preferences</h3>
+                  <div className="rounded-lg border p-4">
+                    <p className="text-sm text-muted-foreground">Your account settings and preferences will appear here.</p>
+                  </div>
+                </div>
+                <Button variant="secondary" className="w-full" onClick={() => navigate('/')}>
+                  Sign Out
+                </Button>
+              </div>
+            </SheetContent>
+          </Sheet>
+          <Button variant="ghost" size="icon" onClick={() => navigate('/new-recording')}>
+            <Plus className="h-6 w-6" />
+          </Button>
+        </div>
       </header>
       
       <div className="relative mb-6">
