@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '@/contexts/AppContext';
@@ -59,7 +60,7 @@ export const RecordingList: React.FC = () => {
   return (
     <div className="p-4 animate-fade-in">
       <header className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Voice Lens</h1>
+        <h1 className="text-3xl font-bold">DialogIQ</h1>
         <Button variant="ghost" size="icon" onClick={() => navigate('/new-recording')}>
           <Plus className="h-6 w-6" />
         </Button>
