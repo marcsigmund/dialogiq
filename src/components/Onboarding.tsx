@@ -2,7 +2,7 @@
 import React, { useState, useRef } from 'react';
 import { useApp } from '@/contexts/AppContext';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Mic, CheckCircle, MessageSquare, Sparkles, Volume2 } from 'lucide-react';
+import { ArrowRight, Mic, CheckCircle, MessageSquare, Sparkles, Volume2, ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const useCases = [
@@ -68,6 +68,19 @@ export const Onboarding: React.FC = () => {
     } else if (step === 1) {
       setVoiceRecognized(true);
       setStep(2); // Skip voice recognition, go to use case selection
+    }
+  };
+  
+  const handleBack = () => {
+    if (step === 1) {
+      setStep(0); // Go back to intro from voice recognition
+      // Reset voice recognition state if needed
+      if (isListening && recognizeVoiceTimeout.current) {
+        clearTimeout(recognizeVoiceTimeout.current);
+        setIsListening(false);
+      }
+    } else if (step === 2) {
+      setStep(1); // Go back to voice recognition from use case selection
     }
   };
   
@@ -191,20 +204,13 @@ export const Onboarding: React.FC = () => {
         <div className="flex justify-between items-center">
           {step === 0 ? (
             <div className="w-20"></div> // Empty spacer for alignment
-          ) : step === 1 ? (
-            <Button 
-              variant="link" 
-              onClick={handleSkip}
-              className="text-muted-foreground"
-            >
-              Skip
-            </Button>
           ) : (
             <Button 
               variant="ghost" 
-              onClick={() => setStep(1)}
+              onClick={handleBack}
               className="text-muted-foreground"
             >
+              <ArrowLeft className="w-4 h-4 mr-2" />
               Back
             </Button>
           )}
