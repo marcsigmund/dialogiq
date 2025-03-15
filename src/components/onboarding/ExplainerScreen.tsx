@@ -4,8 +4,6 @@ import { Button } from '@/components/ui/button';
 import { ArrowRight, ArrowLeft, MessageSquare, Volume2, Sparkles, Users, Languages, Briefcase, Heart } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form';
-import { useForm } from 'react-hook-form';
 import { LanguageSelector, availableLanguages } from './LanguageSelector';
 
 const steps = [
@@ -62,7 +60,6 @@ export const ExplainerScreen: React.FC<ExplainerScreenProps> = ({ onNext, onBack
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState<number>(0);
   const [activeStepIndex, setActiveStepIndex] = useState<number>(-1);
-  const form = useForm();
 
   useEffect(() => {
     if (currentPage === 0) {
@@ -100,10 +97,11 @@ export const ExplainerScreen: React.FC<ExplainerScreenProps> = ({ onNext, onBack
     );
   };
 
-  const hasSelections = selectedInterests.length > 0 || selectedLanguages.length > 0;
+  // Check if both a language and an interest have been selected
+  const hasCompletedSelections = selectedInterests.length > 0 && selectedLanguages.length > 0;
 
   const nextPage = () => {
-    if (currentPage === 1 && !hasSelections) {
+    if (currentPage === 1 && !hasCompletedSelections) {
       return;
     }
     
@@ -200,7 +198,7 @@ export const ExplainerScreen: React.FC<ExplainerScreenProps> = ({ onNext, onBack
 
           <div className="pt-4 border-t animate-in fade-in" style={{ animationDelay: "300ms" }}>
             <h3 className="font-medium text-base mb-3">Which languages do you want to improve?</h3>
-            <p className="text-sm text-muted-foreground mb-4">Swipe right on the languages you want to learn</p>
+            <p className="text-sm text-muted-foreground mb-4">Select languages you want to learn</p>
             
             <LanguageSelector 
               selectedLanguages={selectedLanguages}
@@ -240,10 +238,10 @@ export const ExplainerScreen: React.FC<ExplainerScreenProps> = ({ onNext, onBack
         <Button 
           variant="default" 
           onClick={nextPage}
-          disabled={currentPage === 1 && !hasSelections}
+          disabled={currentPage === 1 && !hasCompletedSelections}
           className={cn(
             "transition-transform duration-200",
-            !(currentPage === 1 && !hasSelections) && "hover:translate-x-1"
+            !(currentPage === 1 && !hasCompletedSelections) && "hover:translate-x-1"
           )}
         >
           {currentPage === 1 ? "Continue" : "Next"}

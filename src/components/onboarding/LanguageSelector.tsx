@@ -1,6 +1,6 @@
 
-import React from 'react';
-import { Check } from 'lucide-react';
+import React, { useState } from 'react';
+import { Check, ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export interface Language {
@@ -34,17 +34,21 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   selectedLanguages,
   onSelectLanguage
 }) => {
+  const [showAll, setShowAll] = useState(false);
+  const initialLanguages = availableLanguages.slice(0, 4);
+  const displayedLanguages = showAll ? availableLanguages : initialLanguages;
+  
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        {availableLanguages.map((language) => {
+    <div className="space-y-3">
+      <div className="grid grid-cols-2 sm:grid-cols-2 gap-3">
+        {displayedLanguages.map((language) => {
           const isSelected = selectedLanguages.includes(language.value);
           
           return (
             <div
               key={language.value}
               className={cn(
-                "flex items-center p-3 rounded-lg border transition-all duration-200 cursor-pointer animate-in fade-in",
+                "flex items-center p-3 rounded-lg border transition-all duration-200 cursor-pointer",
                 isSelected
                   ? "border-primary bg-primary/5"
                   : "border-border hover:border-muted-foreground/50"
@@ -64,6 +68,15 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
           );
         })}
       </div>
+      
+      <button
+        type="button"
+        className="w-full py-2 px-3 border border-border rounded-lg flex items-center justify-center gap-2 text-sm text-muted-foreground hover:bg-muted/50 transition-colors"
+        onClick={() => setShowAll(!showAll)}
+      >
+        {showAll ? 'Show less' : 'Show more languages'}
+        {showAll ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+      </button>
     </div>
   );
 };
