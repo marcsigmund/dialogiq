@@ -1,12 +1,11 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, ArrowLeft, MessageSquare, Volume2, Sparkles, Users, Languages, Briefcase, Heart } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form';
 import { useForm } from 'react-hook-form';
+import { LanguageSelector } from './LanguageSelector';
 
 const steps = [
   {
@@ -52,17 +51,6 @@ const interests = [
   }
 ];
 
-const languages = [
-  { value: 'english', label: 'English' },
-  { value: 'spanish', label: 'Spanish' },
-  { value: 'french', label: 'French' },
-  { value: 'german', label: 'German' },
-  { value: 'italian', label: 'Italian' },
-  { value: 'portuguese', label: 'Portuguese' },
-  { value: 'chinese', label: 'Chinese' },
-  { value: 'japanese', label: 'Japanese' }
-];
-
 interface ExplainerScreenProps {
   onNext: () => void;
   onBack: () => void;
@@ -70,11 +58,11 @@ interface ExplainerScreenProps {
 
 export const ExplainerScreen: React.FC<ExplainerScreenProps> = ({ onNext, onBack }) => {
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
+  const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState<number>(0);
   const [activeStepIndex, setActiveStepIndex] = useState<number>(-1);
   const form = useForm();
 
-  // Animation effect for steps
   useEffect(() => {
     if (currentPage === 0) {
       const timer = setTimeout(() => {
@@ -85,7 +73,6 @@ export const ExplainerScreen: React.FC<ExplainerScreenProps> = ({ onNext, onBack
     }
   }, [currentPage]);
 
-  // Increment active step with delay
   useEffect(() => {
     if (activeStepIndex >= 0 && activeStepIndex < steps.length - 1) {
       const timer = setTimeout(() => {
@@ -104,10 +91,17 @@ export const ExplainerScreen: React.FC<ExplainerScreenProps> = ({ onNext, onBack
     );
   };
 
+  const toggleLanguage = (value: string) => {
+    setSelectedLanguages(prev => 
+      prev.includes(value) 
+        ? prev.filter(item => item !== value) 
+        : [...prev, value]
+    );
+  };
+
   const nextPage = () => {
     if (currentPage < 1) {
       setCurrentPage(currentPage + 1);
-      // Reset animation state when going to next page
       setActiveStepIndex(-1);
     } else {
       onNext();
@@ -117,9 +111,7 @@ export const ExplainerScreen: React.FC<ExplainerScreenProps> = ({ onNext, onBack
   const prevPage = () => {
     if (currentPage > 0) {
       setCurrentPage(currentPage - 1);
-      // Reset animation when going back
       setActiveStepIndex(-1);
-      // Start animation sequence again after a short delay
       setTimeout(() => setActiveStepIndex(0), 300);
     } else {
       onBack();
@@ -201,33 +193,30 @@ export const ExplainerScreen: React.FC<ExplainerScreenProps> = ({ onNext, onBack
 
           <div className="pt-4 border-t animate-in fade-in" style={{ animationDelay: "300ms" }}>
             <h3 className="font-medium text-base mb-3">Which languages do you want to improve?</h3>
-            <Form {...form}>
-              <FormField
-                control={form.control}
-                name="language"
-                render={({ field }) => (
-                  <FormItem>
-                    <Select 
-                      onValueChange={field.onChange} 
-                      defaultValue={field.value}
+            <p className="text-sm text-muted-foreground mb-4">Swipe right on the languages you want to learn</p>
+            
+            <LanguageSelector 
+              selectedLanguages={selectedLanguages}
+              onSelectLanguage={toggleLanguage}
+            />
+            
+            {selectedLanguages.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                <p className="text-sm text-muted-foreground mr-2">Selected:</p>
+                {selectedLanguages.map(lang => {
+                  const language = availableLanguages.find(l => l.value === lang);
+                  return language ? (
+                    <div 
+                      key={lang} 
+                      className="px-2 py-1 rounded-full bg-primary/10 text-primary text-xs flex items-center gap-1"
                     >
-                      <FormControl>
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Select a language" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {languages.map((language) => (
-                          <SelectItem key={language.value} value={language.value}>
-                            {language.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </FormItem>
-                )}
-              />
-            </Form>
+                      <span>{language.flag}</span>
+                      <span>{language.label}</span>
+                    </div>
+                  ) : null;
+                })}
+              </div>
+            )}
           </div>
         </div>
       )}
