@@ -14,6 +14,7 @@ import { Slider } from "@/components/ui/slider";
 import { uploadAudio, pollProcessStatus } from "@/lib/api";
 import { useToast } from "@/components/ui/use-toast";
 import { LiveAudioVisualizer } from "react-audio-visualize";
+import { PulseLoader } from "react-spinners";
 
 interface VoiceRecognitionScreenProps {
   onNext: () => void;
@@ -34,6 +35,7 @@ export const VoiceRecognitionScreen: React.FC<VoiceRecognitionScreenProps> = ({
   const [playbackProgress, setPlaybackProgress] = useState(0);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isPolling, setIsPolling] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [mediaRecorderState, setMediaRecorderState] =
     useState<MediaRecorder | null>(null);
@@ -217,11 +219,13 @@ export const VoiceRecognitionScreen: React.FC<VoiceRecognitionScreenProps> = ({
       if (response && response.id) {
         console.log("Received process ID:", response.id);
         console.log("Starting to poll for process status");
+        setIsPolling(true);
 
         // Poll for status with 2-second intervals, up to 30 attempts (60 seconds total)
         pollProcessStatus(response.id, 2000, 30)
           .then((finalStatus) => {
             console.log("Polling completed with final status:", finalStatus);
+            setIsPolling(false);
 
             if (finalStatus.status === "complete") {
               console.log(
@@ -251,6 +255,7 @@ export const VoiceRecognitionScreen: React.FC<VoiceRecognitionScreenProps> = ({
           })
           .catch((error) => {
             console.error("Error during status polling:", error);
+            setIsPolling(false);
           });
       } else {
         console.warn("No process ID received in the upload response");
@@ -334,7 +339,12 @@ export const VoiceRecognitionScreen: React.FC<VoiceRecognitionScreenProps> = ({
           }
           style={{ cursor: "pointer" }}
         >
-          {voiceRecognized ? (
+          {isPolling ? (
+            <div className="flex flex-col items-center">
+              <PulseLoader color="#10B981" size={12} />
+              <span className="text-xs mt-2 text-app-green">Processing...</span>
+            </div>
+          ) : voiceRecognized ? (
             isPlaying ? (
               <PauseCircle className="w-16 h-16" />
             ) : (
@@ -347,7 +357,7 @@ export const VoiceRecognitionScreen: React.FC<VoiceRecognitionScreenProps> = ({
           )}
         </div>
 
-        {voiceRecognized && audioUrl && (
+        {voiceRecognized && audioUrl && !isPolling && (
           <div className="w-full max-w-xs mx-auto">
             <Slider
               value={[playbackProgress]}
@@ -362,7 +372,9 @@ export const VoiceRecognitionScreen: React.FC<VoiceRecognitionScreenProps> = ({
         <div className="text-center">
           <p className="font-medium text-lg mb-1">
             {voiceRecognized
-              ? isPlaying
+              ? isPolling
+                ? "Processing your voice sample..."
+                : isPlaying
                 ? "Playing back your voice..."
                 : isUploading
                 ? "Uploading voice sample..."
@@ -373,7 +385,9 @@ export const VoiceRecognitionScreen: React.FC<VoiceRecognitionScreenProps> = ({
           </p>
           <p className="text-sm text-muted-foreground">
             {voiceRecognized
-              ? isUploading
+              ? isPolling
+                ? "Please wait while we analyze your voice sample..."
+                : isUploading
                 ? "Please wait while we upload your voice sample..."
                 : "You're ready for your first conversation"
               : isListening
@@ -405,7 +419,7 @@ export const VoiceRecognitionScreen: React.FC<VoiceRecognitionScreenProps> = ({
         <Button
           variant="default"
           onClick={handleNext}
-          disabled={!voiceRecognized || isUploading}
+          disabled={!voiceRecognized || isUploading || isPolling}
         >
           Next
           <ArrowRight className="w-4 h-4 ml-2" />
