@@ -33,11 +33,11 @@ export const IntroScreen: React.FC<IntroScreenProps> = ({ onNext }) => {
           <ul className="text-left space-y-2 mb-4">
             <li className="flex items-start">
               <CheckCircle className="w-5 h-5 text-app-green mr-2 mt-0.5" />
-              <span>Practice speaking in a safe environment</span>
+              <span>Learn by doing mistakes</span>
             </li>
             <li className="flex items-start">
               <CheckCircle className="w-5 h-5 text-app-green mr-2 mt-0.5" />
-              <span>Get personalized feedback on your delivery</span>
+              <span>Get personalized feedback on every conversation</span>
             </li>
             <li className="flex items-start">
               <CheckCircle className="w-5 h-5 text-app-green mr-2 mt-0.5" />
