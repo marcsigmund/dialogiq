@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowRight, ArrowLeft, CheckCircle, Mic } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+// Test comment for GitHub commit
 interface VoiceRecognitionScreenProps {
   onNext: () => void;
   onBack: () => void;
