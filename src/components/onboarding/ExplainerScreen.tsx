@@ -62,8 +62,7 @@ export const ExplainerScreen: React.FC<ExplainerScreenProps> = ({ onNext, onBack
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState<number>(0);
   const [activeStepIndex, setActiveStepIndex] = useState<number>(-1);
-  const [showAlert, setShowAlert] = useState<boolean>(false);
-  const [showSelectionHelper, setShowSelectionHelper] = useState<boolean>(false);
+  const [showError, setShowError] = useState<boolean>(false);
   const form = useForm();
 
   useEffect(() => {
@@ -92,8 +91,7 @@ export const ExplainerScreen: React.FC<ExplainerScreenProps> = ({ onNext, onBack
         ? prev.filter(item => item !== id) 
         : [...prev, id]
     );
-    setShowSelectionHelper(false);
-    setShowAlert(false);
+    setShowError(false);
   };
 
   const toggleLanguage = (value: string) => {
@@ -102,15 +100,12 @@ export const ExplainerScreen: React.FC<ExplainerScreenProps> = ({ onNext, onBack
         ? prev.filter(item => item !== value) 
         : [...prev, value]
     );
-    setShowSelectionHelper(false);
-    setShowAlert(false);
+    setShowError(false);
   };
 
   const nextPage = () => {
     if (currentPage === 1 && selectedInterests.length === 0 && selectedLanguages.length === 0) {
-      setShowSelectionHelper(true);
-      setShowAlert(true);
-      setTimeout(() => setShowAlert(false), 5000);
+      setShowError(true);
       return;
     }
     
@@ -134,17 +129,19 @@ export const ExplainerScreen: React.FC<ExplainerScreenProps> = ({ onNext, onBack
 
   return (
     <div className="space-y-6">
-      {currentPage === 1 && showSelectionHelper && (
-        <Alert className="bg-primary/5 border border-primary/20 text-foreground mb-4">
-          <Info className="h-4 w-4 text-primary mr-2" />
-          <span className="text-sm">Please select at least one option before continuing</span>
-        </Alert>
-      )}
-      
-      {currentPage === 1 && showAlert && (
-        <Alert variant="destructive" className="mb-4">
-          <Info className="h-4 w-4 mr-2" />
-          <span className="text-sm">Selection required: Choose at least one option</span>
+      {currentPage === 1 && selectedInterests.length === 0 && selectedLanguages.length === 0 && (
+        <Alert 
+          className={cn(
+            "border-l-4 mb-4 transition-colors",
+            showError 
+              ? "border-l-destructive bg-destructive/10 text-destructive" 
+              : "border-l-primary bg-primary/5 text-foreground"
+          )}
+        >
+          <Info className={cn("h-4 w-4 mr-2", showError ? "text-destructive" : "text-primary")} />
+          <span className="text-sm font-medium">
+            {showError ? "Please select at least one option to continue" : "Select at least one option before continuing"}
+          </span>
         </Alert>
       )}
 

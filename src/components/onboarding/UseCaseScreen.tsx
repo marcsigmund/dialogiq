@@ -33,35 +33,36 @@ interface UseCaseScreenProps {
 
 export const UseCaseScreen: React.FC<UseCaseScreenProps> = ({ onComplete, onBack }) => {
   const [selectedUseCase, setSelectedUseCase] = useState<string | null>(null);
-  const [showAlert, setShowAlert] = useState<boolean>(false);
+  const [showError, setShowError] = useState<boolean>(false);
   
   const handleSelectUseCase = (id: string) => {
     setSelectedUseCase(id);
-    setShowAlert(false);
+    setShowError(false);
   };
   
   const handleComplete = () => {
     if (selectedUseCase) {
       onComplete(selectedUseCase);
     } else {
-      setShowAlert(true);
-      setTimeout(() => setShowAlert(false), 5000);
+      setShowError(true);
     }
   };
 
   return (
     <div className="space-y-6">
       {!selectedUseCase && (
-        <Alert className="bg-primary/5 border border-primary/20 text-foreground mb-4">
-          <Info className="h-4 w-4 text-primary mr-2" />
-          <span className="text-sm">Please select a use case before continuing</span>
-        </Alert>
-      )}
-      
-      {showAlert && (
-        <Alert variant="destructive" className="mb-4">
-          <Info className="h-4 w-4 mr-2" />
-          <span className="text-sm">Selection required: Choose a use case to continue</span>
+        <Alert 
+          className={cn(
+            "border-l-4 mb-4 transition-colors", 
+            showError 
+              ? "border-l-destructive bg-destructive/10 text-destructive" 
+              : "border-l-primary bg-primary/5 text-foreground"
+          )}
+        >
+          <Info className={cn("h-4 w-4 mr-2", showError ? "text-destructive" : "text-primary")} />
+          <span className="text-sm font-medium">
+            {showError ? "Please select a use case to continue" : "Select a use case before continuing"}
+          </span>
         </Alert>
       )}
 
