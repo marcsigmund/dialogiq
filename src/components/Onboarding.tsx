@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { useApp } from '@/contexts/AppContext';
 import { Button } from '@/components/ui/button';
@@ -26,6 +27,24 @@ const useCases = [
   }
 ];
 
+const steps = [
+  {
+    icon: <MessageSquare className="w-6 h-6" />,
+    title: "Start a conversation",
+    description: "Choose a topic and start practicing with our AI-powered conversation partner"
+  },
+  {
+    icon: <Volume2 className="w-6 h-6" />,
+    title: "Speak naturally",
+    description: "Talk as you would in a real conversation and get real-time feedback"
+  },
+  {
+    icon: <Sparkles className="w-6 h-6" />,
+    title: "Improve with feedback",
+    description: "Review your conversation with detailed analysis and suggestions"
+  }
+];
+
 export const Onboarding: React.FC = () => {
   const { setIsOnboarded, setUseCase } = useApp();
   const [step, setStep] = useState(0); // Start with intro screen (step 0)
@@ -51,10 +70,12 @@ export const Onboarding: React.FC = () => {
   
   const handleNext = () => {
     if (step === 0) {
-      setStep(1); // Move from intro to voice recognition
-    } else if (step === 1 && voiceRecognized) {
-      setStep(2); // Move from voice recognition to use case selection
-    } else if (step === 2 && selectedUseCase) {
+      setStep(1); // Move from intro to explainer screen
+    } else if (step === 1) {
+      setStep(2); // Move from explainer to voice recognition
+    } else if (step === 2 && voiceRecognized) {
+      setStep(3); // Move from voice recognition to use case selection
+    } else if (step === 3 && selectedUseCase) {
       setUseCase(selectedUseCase as any);
       setIsOnboarded(true);
     }
@@ -62,22 +83,26 @@ export const Onboarding: React.FC = () => {
   
   const handleSkip = () => {
     if (step === 0) {
-      setStep(1); // Skip intro, go to voice recognition
+      setStep(1); // Skip intro, go to explainer
     } else if (step === 1) {
+      setStep(2); // Skip explainer, go to voice recognition
+    } else if (step === 2) {
       setVoiceRecognized(true);
-      setStep(2); // Skip voice recognition, go to use case selection
+      setStep(3); // Skip voice recognition, go to use case selection
     }
   };
   
   const handleBack = () => {
     if (step === 1) {
-      setStep(0); // Go back to intro from voice recognition
+      setStep(0); // Go back to intro from explainer
+    } else if (step === 2) {
+      setStep(1); // Go back to explainer from voice recognition
       if (isListening && recognizeVoiceTimeout.current) {
         clearTimeout(recognizeVoiceTimeout.current);
         setIsListening(false);
       }
-    } else if (step === 2) {
-      setStep(1); // Go back to voice recognition from use case selection
+    } else if (step === 3) {
+      setStep(2); // Go back to voice recognition from use case selection
     }
   };
   
@@ -93,8 +118,10 @@ export const Onboarding: React.FC = () => {
             {step === 0 
               ? "Your AI-powered conversation coach" 
               : step === 1 
-                ? "Let's recognize your voice first" 
-                : "What would you like to practice today?"}
+                ? "How DialogIQ works"
+                : step === 2 
+                  ? "Let's recognize your voice first" 
+                  : "What would you like to practice today?"}
           </p>
         </div>
         
@@ -139,6 +166,25 @@ export const Onboarding: React.FC = () => {
               </div>
             </div>
           ) : step === 1 ? (
+            <div className="flex flex-col space-y-6 py-2">
+              <h2 className="text-xl font-medium text-center mb-2">How it works</h2>
+              
+              {steps.map((item, index) => (
+                <div key={index} className="flex items-start space-x-4">
+                  <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                    <div className="absolute -ml-2 -mt-2 w-5 h-5 rounded-full bg-primary text-white flex items-center justify-center text-xs font-medium">
+                      {index + 1}
+                    </div>
+                    {item.icon}
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-base">{item.title}</h3>
+                    <p className="text-sm text-muted-foreground">{item.description}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : step === 2 ? (
             <div className="flex flex-col items-center space-y-6">
               <div 
                 className={cn(
@@ -220,11 +266,11 @@ export const Onboarding: React.FC = () => {
           <Button 
             variant="default" 
             onClick={handleNext}
-            disabled={(step === 1 && !voiceRecognized) || (step === 2 && !selectedUseCase)}
-            className="ml-auto"
+            disabled={(step === 2 && !voiceRecognized) || (step === 3 && !selectedUseCase)}
+            className={cn("ml-auto", step === 0 && "w-full")}
           >
-            {step === 2 ? "Get Started" : "Next"}
-            <ArrowRight className="w-4 h-4 ml-2" />
+            {step === 0 ? "Get Started" : step === 3 ? "Start Practicing" : "Next"}
+            {step !== 0 && <ArrowRight className="w-4 h-4 ml-2" />}
           </Button>
         </div>
       </div>
