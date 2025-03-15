@@ -143,7 +143,7 @@ export const ExplainerScreen: React.FC<ExplainerScreenProps> = ({ onNext, onBack
             >
               <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary relative">
                 <div className={cn(
-                  "absolute inset-0 flex items-center justify-center w-5 h-5 rounded-full bg-primary text-white text-xs font-medium transform transition-all duration-500",
+                  "absolute top-0 left-0 w-5 h-5 rounded-full bg-primary text-white flex items-center justify-center text-xs font-medium transform transition-all duration-500 -translate-x-1/4 -translate-y-1/4",
                   activeStepIndex >= index ? "scale-100" : "scale-0"
                 )}>
                   {index + 1}
