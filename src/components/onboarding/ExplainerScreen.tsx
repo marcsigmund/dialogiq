@@ -1,11 +1,13 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, ArrowLeft, MessageSquare, Volume2, Sparkles, Users, Languages, Briefcase, Heart } from 'lucide-react';
+import { ArrowRight, ArrowLeft, MessageSquare, Volume2, Sparkles, Users, Languages, Briefcase, Heart, ChevronDown, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form';
 import { useForm } from 'react-hook-form';
 import { LanguageSelector, availableLanguages } from './LanguageSelector';
+import { Alert } from "@/components/ui/alert";
 
 const steps = [
   {
@@ -61,6 +63,8 @@ export const ExplainerScreen: React.FC<ExplainerScreenProps> = ({ onNext, onBack
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState<number>(0);
   const [activeStepIndex, setActiveStepIndex] = useState<number>(-1);
+  const [showAlert, setShowAlert] = useState<boolean>(false);
+  const [showSelectionReminder, setShowSelectionReminder] = useState<boolean>(false);
   const form = useForm();
 
   useEffect(() => {
@@ -89,6 +93,7 @@ export const ExplainerScreen: React.FC<ExplainerScreenProps> = ({ onNext, onBack
         ? prev.filter(item => item !== id) 
         : [...prev, id]
     );
+    setShowSelectionReminder(false);
   };
 
   const toggleLanguage = (value: string) => {
@@ -97,9 +102,20 @@ export const ExplainerScreen: React.FC<ExplainerScreenProps> = ({ onNext, onBack
         ? prev.filter(item => item !== value) 
         : [...prev, value]
     );
+    setShowSelectionReminder(false);
   };
 
   const nextPage = () => {
+    if (currentPage === 1 && selectedInterests.length === 0 && selectedLanguages.length === 0) {
+      setShowSelectionReminder(true);
+      
+      // Animated selection reminder
+      setShowAlert(true);
+      setTimeout(() => setShowAlert(false), 5000);
+      
+      return;
+    }
+    
     if (currentPage < 1) {
       setCurrentPage(currentPage + 1);
       setActiveStepIndex(-1);
@@ -119,7 +135,27 @@ export const ExplainerScreen: React.FC<ExplainerScreenProps> = ({ onNext, onBack
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative">
+      {/* Selection Reminder Alert */}
+      {showAlert && (
+        <div className="absolute inset-x-0 -top-14 z-10 animate-in slide-in-from-top duration-500">
+          <Alert variant="destructive" className="bg-primary/10 border-primary/20 text-primary flex items-center gap-2">
+            <AlertCircle className="h-4 w-4" />
+            <span>Please make at least one selection before continuing</span>
+          </Alert>
+        </div>
+      )}
+      
+      {showSelectionReminder && (
+        <div className="absolute inset-x-0 -top-2 z-10 animate-in fade-in duration-300 flex justify-center">
+          <div className="flex items-center gap-2 text-primary animate-bounce">
+            <ChevronDown className="h-5 w-5" />
+            <span className="text-sm font-medium">Select at least one option</span>
+            <ChevronDown className="h-5 w-5" />
+          </div>
+        </div>
+      )}
+
       {currentPage === 0 && (
         <div className="flex flex-col space-y-6 py-2">
           {steps.map((item, index) => (
@@ -235,7 +271,7 @@ export const ExplainerScreen: React.FC<ExplainerScreenProps> = ({ onNext, onBack
           onClick={nextPage}
           className="transition-transform duration-200 hover:translate-x-1"
         >
-          {currentPage === 1 ? "Next" : "Continue"}
+          {currentPage === 1 ? "Continue" : "Next"}
           <ArrowRight className="w-4 h-4 ml-2" />
         </Button>
       </div>

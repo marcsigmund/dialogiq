@@ -1,8 +1,9 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, ArrowLeft, CheckCircle } from 'lucide-react';
+import { ArrowRight, ArrowLeft, CheckCircle, ChevronDown, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Alert } from "@/components/ui/alert";
 
 const useCases = [
   {
@@ -32,6 +33,7 @@ interface UseCaseScreenProps {
 
 export const UseCaseScreen: React.FC<UseCaseScreenProps> = ({ onComplete, onBack }) => {
   const [selectedUseCase, setSelectedUseCase] = useState<string | null>(null);
+  const [showAlert, setShowAlert] = useState<boolean>(false);
   
   const handleSelectUseCase = (id: string) => {
     setSelectedUseCase(id);
@@ -40,11 +42,35 @@ export const UseCaseScreen: React.FC<UseCaseScreenProps> = ({ onComplete, onBack
   const handleComplete = () => {
     if (selectedUseCase) {
       onComplete(selectedUseCase);
+    } else {
+      // Show the alert animation
+      setShowAlert(true);
+      setTimeout(() => setShowAlert(false), 5000);
     }
   };
 
   return (
-    <>
+    <div className="relative">
+      {/* Selection Reminder Alert */}
+      {showAlert && (
+        <div className="absolute inset-x-0 -top-14 z-10 animate-in slide-in-from-top duration-500">
+          <Alert variant="destructive" className="bg-primary/10 border-primary/20 text-primary flex items-center gap-2">
+            <AlertCircle className="h-4 w-4" />
+            <span>Please select a use case before continuing</span>
+          </Alert>
+        </div>
+      )}
+      
+      {!selectedUseCase && showAlert && (
+        <div className="absolute inset-x-0 -top-2 z-10 animate-in fade-in duration-300 flex justify-center">
+          <div className="flex items-center gap-2 text-primary animate-bounce">
+            <ChevronDown className="h-5 w-5" />
+            <span className="text-sm font-medium">Select an option</span>
+            <ChevronDown className="h-5 w-5" />
+          </div>
+        </div>
+      )}
+
       <div className="space-y-3">
         {useCases.map((useCase) => (
           <div 
@@ -70,7 +96,7 @@ export const UseCaseScreen: React.FC<UseCaseScreenProps> = ({ onComplete, onBack
           </div>
         ))}
       </div>
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center mt-6">
         <Button 
           variant="ghost" 
           onClick={onBack}
@@ -82,12 +108,12 @@ export const UseCaseScreen: React.FC<UseCaseScreenProps> = ({ onComplete, onBack
         <Button 
           variant="default" 
           onClick={handleComplete}
-          disabled={!selectedUseCase}
+          className="transition-transform duration-200 hover:translate-x-1"
         >
           Start Practicing
           <ArrowRight className="w-4 h-4 ml-2" />
         </Button>
       </div>
-    </>
+    </div>
   );
 };
