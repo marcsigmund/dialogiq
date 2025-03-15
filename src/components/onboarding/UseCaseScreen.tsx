@@ -51,10 +51,10 @@ export const UseCaseScreen: React.FC<UseCaseScreenProps> = ({ onComplete, onBack
 
   return (
     <div className="relative">
-      {/* Selection Reminder Alert */}
+      {/* Selection Reminder Alert - Improved positioning */}
       {showAlert && (
-        <div className="absolute inset-x-0 -top-14 z-10 animate-in slide-in-from-top duration-500">
-          <Alert variant="destructive" className="bg-primary/10 border-primary/20 text-primary flex items-center gap-2">
+        <div className="fixed inset-x-0 top-8 z-50 flex justify-center px-4">
+          <Alert variant="destructive" className="bg-primary/10 border-primary/20 text-primary flex items-center gap-2 max-w-md w-full shadow-lg">
             <AlertCircle className="h-4 w-4" />
             <span>Please select a use case before continuing</span>
           </Alert>
@@ -62,8 +62,8 @@ export const UseCaseScreen: React.FC<UseCaseScreenProps> = ({ onComplete, onBack
       )}
       
       {!selectedUseCase && showAlert && (
-        <div className="absolute inset-x-0 -top-2 z-10 animate-in fade-in duration-300 flex justify-center">
-          <div className="flex items-center gap-2 text-primary animate-bounce">
+        <div className="absolute inset-x-0 top-0 z-10 flex justify-center mb-4">
+          <div className="flex items-center gap-2 text-primary animate-bounce py-2">
             <ChevronDown className="h-5 w-5" />
             <span className="text-sm font-medium">Select an option</span>
             <ChevronDown className="h-5 w-5" />
@@ -71,7 +71,7 @@ export const UseCaseScreen: React.FC<UseCaseScreenProps> = ({ onComplete, onBack
         </div>
       )}
 
-      <div className="space-y-3">
+      <div className="space-y-3 mt-8">
         {useCases.map((useCase) => (
           <div 
             key={useCase.id}
