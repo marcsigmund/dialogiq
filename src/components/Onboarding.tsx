@@ -1,4 +1,6 @@
+
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useApp } from "@/contexts/AppContext";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -7,17 +9,18 @@ import { ExplainerScreen } from "./onboarding/ExplainerScreen";
 import { VoiceRecognitionScreen } from "./onboarding/VoiceRecognitionScreen";
 import { UseCaseScreen } from "./onboarding/UseCaseScreen";
 import { OnboardingStep } from "./onboarding/types";
+import { v4 as uuidv4 } from "uuid";
 
 export const Onboarding: React.FC = () => {
-  const { setIsOnboarded, setUseCase } = useApp();
+  const navigate = useNavigate();
+  const { setIsOnboarded, setUseCase, addRecording, setSelectedRecordingId } = useApp();
   const [step, setStep] = useState<OnboardingStep>(OnboardingStep.INTRO);
   const isMobile = useIsMobile();
 
   const handleNext = () => {
     if (step === OnboardingStep.VOICE_RECOGNITION) {
-      // Set a default use case and complete onboarding
-      setUseCase("language");
-      setIsOnboarded(true);
+      // Move to the use case selection screen
+      setStep(OnboardingStep.USE_CASE);
     } else {
       setStep((prevStep) => prevStep + 1);
     }
@@ -28,12 +31,38 @@ export const Onboarding: React.FC = () => {
   };
 
   const handleSkip = () => {
-    setStep((prevStep) => prevStep + 1);
+    setStep(OnboardingStep.USE_CASE);
   };
 
   const handleComplete = (selectedUseCase: string) => {
     setUseCase(selectedUseCase as any);
     setIsOnboarded(true);
+    navigate('/');
+  };
+
+  const handleRecordingComplete = (blob: Blob, url: string, duration: number) => {
+    // Create a new recording entry
+    const newRecording = {
+      id: uuidv4(),
+      title: "My First Conversation",
+      timestamp: Date.now(),
+      duration: duration,
+      audioUrl: url,
+      transcript: "",
+    };
+    
+    // Add the recording to the app state
+    addRecording(newRecording);
+    
+    // Set it as the selected recording
+    setSelectedRecordingId(newRecording.id);
+    
+    // Complete onboarding with default use case
+    setUseCase("language");
+    setIsOnboarded(true);
+    
+    // Navigate to the recording detail page
+    navigate(`/recording/${newRecording.id}`);
   };
 
   return (
@@ -71,6 +100,7 @@ export const Onboarding: React.FC = () => {
               onNext={handleNext}
               onBack={handleBack}
               onSkip={handleSkip}
+              onRecordingComplete={handleRecordingComplete}
             />
           )}
 

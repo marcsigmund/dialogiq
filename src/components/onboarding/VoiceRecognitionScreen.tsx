@@ -46,12 +46,14 @@ interface VoiceRecognitionScreenProps {
   onNext: () => void;
   onBack: () => void;
   onSkip: () => void;
+  onRecordingComplete?: (blob: Blob, url: string, duration: number) => void;
 }
 
 export const VoiceRecognitionScreen: React.FC<VoiceRecognitionScreenProps> = ({
   onNext,
   onBack,
   onSkip,
+  onRecordingComplete,
 }) => {
   const [isListening, setIsListening] = useState(false);
   const [voiceRecognized, setVoiceRecognized] = useState(false);
@@ -82,7 +84,6 @@ export const VoiceRecognitionScreen: React.FC<VoiceRecognitionScreenProps> = ({
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check microphone permission status
     const checkMicrophonePermission = async () => {
       try {
         const permissionStatus = await navigator.permissions.query({
@@ -179,7 +180,6 @@ export const VoiceRecognitionScreen: React.FC<VoiceRecognitionScreenProps> = ({
         setVoiceRecognized(true);
         setMediaRecorderState(null);
 
-        // Upload the audio recording to the API
         handleUploadAudio(newAudioBlob);
       };
 
@@ -187,7 +187,6 @@ export const VoiceRecognitionScreen: React.FC<VoiceRecognitionScreenProps> = ({
       mediaRecorder.current.start();
     } catch (error) {
       console.error("Error accessing microphone:", error);
-      // If we can't access the microphone, just pretend it worked
       setIsListening(false);
       setVoiceRecognized(true);
       setMediaRecorderState(null);
@@ -239,11 +238,9 @@ export const VoiceRecognitionScreen: React.FC<VoiceRecognitionScreenProps> = ({
     console.log("Audio blob size:", Math.round(blob.size / 1024), "KB");
 
     try {
-      // Upload the audio recording to the API
       console.log("Sending audio to API...");
       const response = await uploadAudio(blob);
 
-      // Handle the API response
       console.log("Audio upload response:", response);
 
       toast({
@@ -251,13 +248,11 @@ export const VoiceRecognitionScreen: React.FC<VoiceRecognitionScreenProps> = ({
         description: "Your voice sample has been uploaded successfully.",
       });
 
-      // Start polling for process status
       if (response && response.id) {
         console.log("Received process ID:", response.id);
         console.log("Starting to poll for process status");
         setIsPolling(true);
 
-        // Poll for status with 2-second intervals, up to 30 attempts (60 seconds total)
         pollProcessStatus(response.id, 2000, 30)
           .then((finalStatus) => {
             console.log("Polling completed with final status:", finalStatus);
@@ -272,7 +267,6 @@ export const VoiceRecognitionScreen: React.FC<VoiceRecognitionScreenProps> = ({
                 finalStatus.result
               );
 
-              // Create a formatted conversation text from the array of strings
               const conversationText = finalStatus.result.elevenlabs
                 .map(
                   (text, index) =>
@@ -280,7 +274,6 @@ export const VoiceRecognitionScreen: React.FC<VoiceRecognitionScreenProps> = ({
                 )
                 .join("\n\n");
 
-              // Set the transcription text and show it
               setTranscriptionText(conversationText);
               setShowTranscription(true);
 
@@ -326,19 +319,16 @@ export const VoiceRecognitionScreen: React.FC<VoiceRecognitionScreenProps> = ({
   };
 
   const animateTranscription = (result: TranscriptionResult) => {
-    // Clear any existing animation
     if (transcriptionTimeoutRef.current) {
       clearTimeout(transcriptionTimeoutRef.current);
     }
     setCurrentWordIndex(-1);
 
-    // Guard against null or invalid result
     if (!result?.words) {
       console.error("Invalid transcription result:", result);
       return;
     }
 
-    // Animate each word based on its timing
     const words = result.words.filter((word) => word.type === "word");
     let currentIndex = 0;
 
@@ -356,13 +346,11 @@ export const VoiceRecognitionScreen: React.FC<VoiceRecognitionScreenProps> = ({
       }
     };
 
-    // Only start animation if we have words
     if (words.length > 0) {
       animateWord();
     }
   };
 
-  // Cleanup timeouts on unmount
   useEffect(() => {
     return () => {
       if (transcriptionTimeoutRef.current) {
@@ -378,23 +366,29 @@ export const VoiceRecognitionScreen: React.FC<VoiceRecognitionScreenProps> = ({
   };
 
   const handleNext = () => {
-    if (voiceRecognized && !isUploading) {
-      // Log the transcription and audio state
+    if (voiceRecognized && !isUploading && audioBlob.current && audioUrl) {
       console.log("Onboarding Voice Selection:", {
         transcription: transcriptionText,
         audioBlob: audioBlob.current,
         audioUrl: audioUrl,
         duration: audioRef.current?.duration || 0,
       });
-      // Set a default use case
-      onNext();
+
+      if (onRecordingComplete && audioBlob.current && audioUrl) {
+        onRecordingComplete(
+          audioBlob.current, 
+          audioUrl, 
+          audioRef.current?.duration || 0
+        );
+      } else {
+        onNext();
+      }
     }
   };
 
   return (
     <>
       <div className="flex flex-col items-center space-y-6">
-        {/* Live Audio Visualizer for recording */}
         {isListening && mediaRecorderState && (
           <div className="w-full max-w-xs mx-auto mb-4">
             <div
@@ -410,7 +404,6 @@ export const VoiceRecognitionScreen: React.FC<VoiceRecognitionScreenProps> = ({
                 barColor="url(#recordingGradient)"
                 backgroundColor="transparent"
               />
-              {/* Gradient definition for recording state */}
               <svg style={{ position: "absolute", width: 0, height: 0 }}>
                 <defs>
                   <linearGradient
@@ -507,13 +500,11 @@ export const VoiceRecognitionScreen: React.FC<VoiceRecognitionScreenProps> = ({
           </p>
         </div>
 
-        {/* Transcription section */}
         {transcriptionText && (
           <div className="w-full max-w-md">
             <button
               onClick={() => {
                 setShowTranscription(!showTranscription);
-                // Reset the typing line when showing transcription
                 if (!showTranscription) {
                   setCurrentTypingLine(0);
                 }
@@ -549,7 +540,7 @@ export const VoiceRecognitionScreen: React.FC<VoiceRecognitionScreenProps> = ({
                               .callFunction(() => {
                                 setTimeout(() => {
                                   setCurrentTypingLine((prev) => prev + 1);
-                                }, 500); // Add a small delay between lines
+                                }, 500);
                               })
                               .start();
                           }}
