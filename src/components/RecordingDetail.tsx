@@ -4,10 +4,11 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useApp } from '@/contexts/AppContext';
 import AudioWaveform from './AudioWaveform';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, Play, Pause, Share2 } from 'lucide-react';
+import { ChevronLeft, Play, Pause, Share2, ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Analysis from './Analysis';
 import { Slider } from '@/components/ui/slider';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 export const RecordingDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -15,6 +16,7 @@ export const RecordingDetail: React.FC = () => {
   const { recordings, setSelectedRecordingId } = useApp();
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
+  const [isAudioSectionOpen, setIsAudioSectionOpen] = useState(false);
   const audioElement = useRef<HTMLAudioElement | null>(null);
   const progressInterval = useRef<ReturnType<typeof setInterval> | null>(null);
   
@@ -143,55 +145,79 @@ export const RecordingDetail: React.FC = () => {
       </header>
       
       <div className="p-4 flex-1">
-        <div className="glass-panel p-6 mb-6">
-          <div className="flex justify-between items-center mb-4">
-            <div>
-              <p className="text-sm text-muted-foreground">{formatDate(recording.timestamp)}</p>
-              <p className="text-sm text-muted-foreground">{formatTime(recording.timestamp)}</p>
-            </div>
-            <div className="text-right">
-              <p className="text-lg font-medium">{formatDuration(recording.duration)}</p>
-            </div>
-          </div>
+        <Collapsible 
+          open={isAudioSectionOpen} 
+          onOpenChange={setIsAudioSectionOpen}
+          className="mb-6"
+        >
+          <CollapsibleTrigger asChild>
+            <Button 
+              variant="ghost" 
+              className="flex w-full justify-between items-center p-4 rounded-lg bg-gray-50 hover:bg-gray-100"
+            >
+              <div className="flex items-center">
+                <span className="font-medium">Audio Recording</span>
+                <span className="ml-2 text-sm text-muted-foreground">
+                  {formatDuration(recording.duration)}
+                </span>
+              </div>
+              {isAudioSectionOpen ? (
+                <ChevronUp className="h-5 w-5" />
+              ) : (
+                <ChevronDown className="h-5 w-5" />
+              )}
+            </Button>
+          </CollapsibleTrigger>
           
-          <AudioWaveform
-            isRecording={false}
-            audioUrl={recording.audioUrl}
-            className="mb-4"
-          />
-          
-          <div className="flex flex-col space-y-4">
-            {recording.duration > 0 && (
-              <div className="px-4">
-                <Slider
-                  value={[currentTime]}
-                  max={recording.duration}
-                  step={0.1}
-                  onValueChange={handleSeek}
-                />
-                <div className="flex justify-between text-sm text-muted-foreground mt-1">
-                  <span>{formatDuration(Math.floor(currentTime))}</span>
-                  <span>{formatDuration(recording.duration)}</span>
+          <CollapsibleContent>
+            <div className="glass-panel p-6 mt-2">
+              <div className="flex justify-between items-center mb-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">{formatDate(recording.timestamp)}</p>
+                  <p className="text-sm text-muted-foreground">{formatTime(recording.timestamp)}</p>
                 </div>
               </div>
-            )}
-            
-            <div className="flex justify-center">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="w-12 h-12 rounded-full"
-                onClick={handlePlayPause}
-              >
-                {isPlaying ? (
-                  <Pause className="h-6 w-6" />
-                ) : (
-                  <Play className="h-6 w-6 ml-1" />
+              
+              <AudioWaveform
+                isRecording={false}
+                audioUrl={recording.audioUrl}
+                className="mb-4"
+              />
+              
+              <div className="flex flex-col space-y-4">
+                {recording.duration > 0 && (
+                  <div className="px-4">
+                    <Slider
+                      value={[currentTime]}
+                      max={recording.duration}
+                      step={0.1}
+                      onValueChange={handleSeek}
+                    />
+                    <div className="flex justify-between text-sm text-muted-foreground mt-1">
+                      <span>{formatDuration(Math.floor(currentTime))}</span>
+                      <span>{formatDuration(recording.duration)}</span>
+                    </div>
+                  </div>
                 )}
-              </Button>
+                
+                <div className="flex justify-center">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="w-12 h-12 rounded-full"
+                    onClick={handlePlayPause}
+                  >
+                    {isPlaying ? (
+                      <Pause className="h-6 w-6" />
+                    ) : (
+                      <Play className="h-6 w-6 ml-1" />
+                    )}
+                  </Button>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
+          </CollapsibleContent>
+        </Collapsible>
         
         <Analysis recordingId={recording.id} />
       </div>

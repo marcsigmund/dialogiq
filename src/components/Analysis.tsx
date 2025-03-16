@@ -1,22 +1,38 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp, Recording } from '@/contexts/AppContext';
 import { Button } from '@/components/ui/button';
-import { LoaderCircle, CheckCircle, AlertCircle } from 'lucide-react';
+import { LoaderCircle, CheckCircle, AlertCircle, Text, List } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/components/ui/use-toast';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface AnalysisProps {
   recordingId: string;
+}
+
+type ErrorType = 'mistake' | 'inaccuracy' | 'grammar';
+
+interface HighlightWithType extends Recording['analysis']['highlights'][0] {
+  type: ErrorType;
+  color: string;
 }
 
 export const Analysis: React.FC<AnalysisProps> = ({ recordingId }) => {
   const { getSelectedRecording, updateRecording } = useApp();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isInaccuraciesOpen, setIsInaccuraciesOpen] = useState(false);
   const { toast } = useToast();
   
   const recording = getSelectedRecording();
+  
+  useEffect(() => {
+    // Auto-generate analysis if there's none
+    if (recording && !recording.transcript && !isAnalyzing) {
+      handleGenerateAnalysis();
+    }
+  }, [recording]);
   
   if (!recording) {
     return <div>Recording not found</div>;
@@ -31,19 +47,30 @@ export const Analysis: React.FC<AnalysisProps> = ({ recordingId }) => {
       // In a real implementation, you would send the audio to your backend
       await new Promise(resolve => setTimeout(resolve, 3000));
       
-      // Mock response
+      // Mock response with different types of errors
       const mockAnalysis = {
-        transcript: "Hello, I'm practicing my German. Ich bin ein Student und ich lerne Deutsch seit zwei Jahren. Manchmal mache ich Fehler mit der Grammatik. Ich hoffe, dass ich besser werde.",
+        transcript: "You: Hello, I'm practicing my German. Ich bin ein Student und ich lerne Deutsch seit zwei Jahren. Manchmal mache ich Fehler mit der Grammatik. Ich hoffe, dass ich besser werde.",
         highlights: [
           {
             startIndex: 89,
             endIndex: 110,
-            suggestion: "Watch your word order in 'Manchmal mache ich Fehler'. Consider using 'Manchmal Fehler mache ich' for variety."
+            suggestion: "Watch your word order in 'Manchmal mache ich Fehler'. Consider using 'Manchmal Fehler mache ich' for variety.",
+            type: "inaccuracy",
+            color: "bg-yellow-100"
           },
           {
             startIndex: 159,
             endIndex: 183,
-            suggestion: "Better to say 'Ich hoffe, dass ich mich verbessere' for more natural phrasing."
+            suggestion: "Better to say 'Ich hoffe, dass ich mich verbessere' for more natural phrasing.",
+            type: "grammar",
+            color: "bg-orange-100"
+          },
+          {
+            startIndex: 50,
+            endIndex: 62,
+            suggestion: "The word 'Student' should be 'Studierender' for gender-neutral language.",
+            type: "mistake",
+            color: "bg-red-100"
           }
         ],
         recommendations: "Your German pronunciation is good, but you can improve your sentence structure. Try using more complex sentences and paying attention to verb placement. Consider practicing with subordinate clauses to improve your fluency."
@@ -97,11 +124,13 @@ export const Analysis: React.FC<AnalysisProps> = ({ recordingId }) => {
         );
       }
       
-      // Add the highlighted text
+      // Add the highlighted text with appropriate color based on type
+      const highlightColor = (highlight as HighlightWithType).color || "bg-yellow-100";
+      
       elements.push(
         <span 
           key={`highlight-${i}`}
-          className="highlight-text relative group"
+          className={`${highlightColor} px-1 py-0.5 rounded-sm relative group cursor-pointer`}
         >
           {recording.transcript!.substring(highlight.startIndex, highlight.endIndex)}
           <span className="hidden group-hover:block absolute bottom-full left-0 w-64 p-2 bg-white rounded-md shadow-lg text-sm z-10 mb-1">
@@ -122,17 +151,61 @@ export const Analysis: React.FC<AnalysisProps> = ({ recordingId }) => {
       );
     }
     
-    return <div className="space-y-2">{elements}</div>;
+    return <div className="space-y-2 text-left">{elements}</div>;
+  };
+  
+  const errorTypes = {
+    mistake: { label: "Mistakes", color: "text-red-500", description: "Words that don't exist or are completely wrong" },
+    inaccuracy: { label: "Inaccuracies", color: "text-yellow-500", description: "Unusual phrasing or uncommon expressions" },
+    grammar: { label: "Grammar", color: "text-orange-500", description: "Incorrect sentence structure or grammar" }
+  };
+  
+  const renderErrorLegend = () => {
+    return (
+      <Collapsible 
+        open={isInaccuraciesOpen} 
+        onOpenChange={setIsInaccuraciesOpen}
+        className="mt-4"
+      >
+        <CollapsibleTrigger asChild>
+          <Button 
+            variant="ghost" 
+            className="flex w-full justify-between items-center p-2 text-sm rounded-lg"
+          >
+            <div className="flex items-center">
+              <List className="h-4 w-4 mr-2" />
+              <span>Types of inaccuracies detected</span>
+            </div>
+            {isInaccuraciesOpen ? (
+              <ChevronUp className="h-4 w-4" />
+            ) : (
+              <ChevronDown className="h-4 w-4" />
+            )}
+          </Button>
+        </CollapsibleTrigger>
+        
+        <CollapsibleContent>
+          <div className="mt-2 text-sm bg-white/50 p-3 rounded-lg space-y-2">
+            {Object.entries(errorTypes).map(([key, { label, color, description }]) => (
+              <div key={key} className="flex items-start">
+                <div className={`w-2 h-2 mt-1.5 rounded-full ${color.replace('text-', 'bg-')}`}></div>
+                <div className="ml-2">
+                  <span className={`font-medium ${color}`}>{label}</span>: {description}
+                </div>
+              </div>
+            ))}
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
+    );
   };
   
   return (
-    <div className="p-4 animate-fade-in">
-      <h2 className="text-xl font-semibold mb-4">Analysis</h2>
-      
+    <div className="animate-fade-in">
       {!recording.analysis ? (
         <div className="glass-panel p-6 text-center">
           <p className="mb-4">
-            Generate an analysis to get insights and improvement suggestions.
+            Analyzing your conversation...
           </p>
           
           <Button
@@ -161,18 +234,19 @@ export const Analysis: React.FC<AnalysisProps> = ({ recordingId }) => {
         <div className="space-y-6">
           <div className="glass-panel p-6">
             <h3 className="text-lg font-medium mb-3 flex items-center">
-              <CheckCircle className="mr-2 h-4 w-4 text-app-green" />
-              Transcript
+              <Text className="mr-2 h-4 w-4" />
+              Conversation Transcript
             </h3>
             <div className="bg-white/50 p-4 rounded-lg">
               {renderTranscriptWithHighlights()}
+              {renderErrorLegend()}
             </div>
           </div>
           
           <div className="glass-panel p-6">
             <h3 className="text-lg font-medium mb-3">Recommendations</h3>
             <div className="bg-white/50 p-4 rounded-lg">
-              <p>{recording.analysis.recommendations}</p>
+              <p className="text-left">{recording.analysis.recommendations}</p>
             </div>
           </div>
         </div>
