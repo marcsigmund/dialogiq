@@ -74,6 +74,7 @@ export const VoiceRecognitionScreen: React.FC<VoiceRecognitionScreenProps> = ({
   const [currentWordIndex, setCurrentWordIndex] = useState(-1);
   const transcriptionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [currentTypingLine, setCurrentTypingLine] = useState(0);
+  const [apiResponseId, setApiResponseId] = useState<string | null>(null);
 
   const mediaRecorder = useRef<MediaRecorder | null>(null);
   const stream = useRef<MediaStream | null>(null);
@@ -233,6 +234,7 @@ export const VoiceRecognitionScreen: React.FC<VoiceRecognitionScreenProps> = ({
     setTranscriptionText(null);
     setShowTranscription(false);
     setCurrentWordIndex(-1);
+    setApiResponseId(null);
 
     console.log("Starting audio upload process...");
     console.log("Audio blob size:", Math.round(blob.size / 1024), "KB");
@@ -242,13 +244,15 @@ export const VoiceRecognitionScreen: React.FC<VoiceRecognitionScreenProps> = ({
       const response = await uploadAudio(blob);
 
       console.log("Audio upload response:", response);
-
-      toast({
-        title: "Voice sample uploaded",
-        description: "Your voice sample has been uploaded successfully.",
-      });
-
+      
       if (response && response.id) {
+        setApiResponseId(response.id);
+        
+        toast({
+          title: "Voice sample uploaded",
+          description: "Your voice sample has been uploaded successfully.",
+        });
+
         console.log("Received process ID:", response.id);
         console.log("Starting to poll for process status");
         setIsPolling(true);
@@ -260,19 +264,22 @@ export const VoiceRecognitionScreen: React.FC<VoiceRecognitionScreenProps> = ({
 
             if (
               finalStatus.status === "complete" &&
-              finalStatus.result?.elevenlabs
+              finalStatus.result
             ) {
               console.log(
                 "Process completed successfully:",
                 finalStatus.result
               );
 
-              const conversationText = finalStatus.result.elevenlabs
-                .map(
-                  (text, index) =>
-                    `${index % 2 === 0 ? "You" : "Partner"}: ${text}`
-                )
-                .join("\n\n");
+              // Check if we have formatted conversation or use the transcript directly
+              let conversationText = finalStatus.result.transcript || "";
+              
+              // Convert speaker ids to "You" and "Partner" if needed
+              if (conversationText.includes("speaker0:") || conversationText.includes("speaker1:")) {
+                conversationText = conversationText
+                  .replace(/speaker0:/gi, "You:")
+                  .replace(/speaker1:/gi, "Partner:");
+              }
 
               setTranscriptionText(conversationText);
               setShowTranscription(true);
@@ -380,6 +387,9 @@ export const VoiceRecognitionScreen: React.FC<VoiceRecognitionScreenProps> = ({
           audioUrl, 
           audioRef.current?.duration || 0
         );
+      } else if (apiResponseId) {
+        localStorage.setItem("lastApiResponseId", apiResponseId);
+        onNext();
       } else {
         onNext();
       }

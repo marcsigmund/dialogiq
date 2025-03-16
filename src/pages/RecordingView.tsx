@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ChevronLeft } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import { uploadAudio } from '@/lib/api';
 
 const RecordingView: React.FC = () => {
   const navigate = useNavigate();
@@ -18,12 +19,52 @@ const RecordingView: React.FC = () => {
     blob: Blob;
     url: string;
     duration: number;
+    apiResponseId?: string;
   } | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
   
-  const handleRecordingComplete = (blob: Blob, url: string, duration: number) => {
-    setRecordingInfo({ blob, url, duration });
-    setIsRecordingCompleted(true);
+  const handleRecordingComplete = async (blob: Blob, url: string, duration: number) => {
+    setIsUploading(true);
+    
+    try {
+      // Upload the audio to the API
+      const response = await uploadAudio(blob);
+      
+      if (response && response.id) {
+        setRecordingInfo({ 
+          blob, 
+          url, 
+          duration,
+          apiResponseId: response.id
+        });
+        
+        toast({
+          title: "Recording uploaded",
+          description: "Your recording has been uploaded for analysis.",
+        });
+      } else {
+        setRecordingInfo({ blob, url, duration });
+        
+        toast({
+          variant: "destructive",
+          title: "Upload issue",
+          description: "Continuing without analysis. You can try again later.",
+        });
+      }
+    } catch (error) {
+      console.error("Error uploading recording:", error);
+      setRecordingInfo({ blob, url, duration });
+      
+      toast({
+        variant: "destructive",
+        title: "Upload failed",
+        description: "Failed to upload recording. Continuing without analysis.",
+      });
+    } finally {
+      setIsUploading(false);
+      setIsRecordingCompleted(true);
+    }
   };
   
   const handleSaveRecording = () => {
@@ -36,6 +77,8 @@ const RecordingView: React.FC = () => {
       duration: recordingInfo.duration,
       audioUrl: recordingInfo.url,
       transcript: '',
+      apiResponseId: recordingInfo.apiResponseId,
+      analysis: recordingInfo.apiResponseId ? { apiResponseId: recordingInfo.apiResponseId } : undefined
     };
     
     addRecording(newRecording);
@@ -79,6 +122,7 @@ const RecordingView: React.FC = () => {
             <Button
               onClick={handleSaveRecording}
               className="w-full"
+              disabled={isUploading}
             >
               Save Recording
             </Button>

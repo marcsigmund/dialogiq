@@ -1,6 +1,41 @@
+
 import React, { createContext, useContext, useState, useEffect } from "react";
 
 type UseCaseType = "language" | "sales" | "interview" | null;
+
+interface ErrorItem {
+  quote: string;
+  error_type: string;
+  correction: string;
+}
+
+interface VocabItem {
+  quote: string;
+  synonyms: string[];
+}
+
+interface ErrorItemRanged {
+  ranges: [number, number, number][];
+  error_type: string;
+  correction: string;
+}
+
+interface VocabItemRanged {
+  range: [number, number, number];
+  synonyms: string[];
+}
+
+interface EvaluationResponse {
+  mistakes: ErrorItem[];
+  inaccuracies: ErrorItem[];
+  vocabularies: VocabItem[];
+}
+
+interface EvaluationResponseRanged {
+  mistakes: ErrorItemRanged[];
+  inaccuracies: ErrorItemRanged[];
+  vocabularies: VocabItemRanged[];
+}
 
 export interface Recording {
   id: string;
@@ -14,8 +49,12 @@ export interface Recording {
       startIndex: number;
       endIndex: number;
       suggestion: string;
+      type?: string; // For backward compatibility
+      color?: string; // For backward compatibility
     }[];
     recommendations?: string;
+    apiResponse?: EvaluationResponse;
+    apiRangedResponse?: EvaluationResponseRanged;
   };
 }
 
