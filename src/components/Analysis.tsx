@@ -30,8 +30,8 @@ export const Analysis: React.FC<AnalysisProps> = ({ recordingId }) => {
 
   useEffect(() => {
     // If we have an API response ID, check its status
-    if (recording?.analysis?.apiResponseId && !recording.analysis.apiResponse) {
-      checkApiResponseStatus(recording.analysis.apiResponseId);
+    if (recording?.apiResponseId && !recording.analysis?.mistralResponse) {
+      checkApiResponseStatus(recording.apiResponseId);
     }
   }, [recording]);
   
@@ -47,12 +47,24 @@ export const Analysis: React.FC<AnalysisProps> = ({ recordingId }) => {
       const status = await pollProcessStatus(processId, 2000, 30);
       
       if (status.status === "complete" && status.result) {
+        const result = status.result;
+        
+        // Extract transcript from elevenlabs array or use empty string
+        const transcriptContent = result.elevenlabs && result.elevenlabs.length > 0 
+          ? result.elevenlabs.join("\n\n")
+          : result.transcript || '';
+        
+        // Format transcript (replace speaker IDs if present)
+        const formattedTranscript = transcriptContent
+          .replace(/speaker0:/gi, "You:")
+          .replace(/speaker1:/gi, "Partner:");
+        
         updateRecording(recordingId, {
-          transcript: status.result.transcript || '',
+          transcript: formattedTranscript,
           analysis: {
-            ...(recording.analysis || {}),
-            apiResponse: status.result.evaluation || null,
-            recommendations: status.result.recommendations || "No specific recommendations available."
+            mistralResponse: result.mistral || null,
+            summary: result.summary || "No summary available.",
+            recommendations: result.summary || "No specific recommendations available."
           }
         });
         
@@ -172,9 +184,9 @@ export const Analysis: React.FC<AnalysisProps> = ({ recordingId }) => {
       return <p>No transcript available</p>;
     }
     
-    // If we have real API data, render it with highlights
-    if (recording.analysis?.apiResponse) {
-      return renderTranscriptWithApiData();
+    // If we have mistral data, render it with highlights
+    if (recording.analysis?.mistralResponse) {
+      return renderTranscriptWithMistralData();
     }
     
     // Otherwise, just render the plain transcript
@@ -189,130 +201,158 @@ export const Analysis: React.FC<AnalysisProps> = ({ recordingId }) => {
     );
   };
 
-  const renderTranscriptWithApiData = () => {
-    if (!recording.transcript || !recording.analysis?.apiResponse) {
+  const renderTranscriptWithMistralData = () => {
+    if (!recording.transcript || !recording.analysis?.mistralResponse) {
       return <p>{recording.transcript || "No transcript available"}</p>;
     }
     
-    // Get the full list of all issues we need to highlight
-    const apiResponse = recording.analysis.apiResponse;
+    // Get the mistral response data
+    const mistralResponse = recording.analysis.mistralResponse;
     
     // Create a list of all highlights
     const allHighlights: Array<{
-      quote: string; 
+      ranges: [number, number, number][];
       errorType: string; 
       correction: string;
       type: 'mistake' | 'inaccuracy' | 'vocabulary';
     }> = [
-      ...apiResponse.mistakes.map(err => ({ 
-        quote: err.quote, 
+      ...mistralResponse.mistakes.map(err => ({ 
+        ranges: err.ranges, 
         errorType: err.error_type, 
         correction: err.correction,
         type: 'mistake' as const
       })),
-      ...apiResponse.inaccuracies.map(err => ({ 
-        quote: err.quote, 
+      ...mistralResponse.inaccuracies.map(err => ({ 
+        ranges: err.ranges, 
         errorType: err.error_type, 
         correction: err.correction,
         type: 'inaccuracy' as const
       })),
-      ...(apiResponse.vocabularies || []).map(vocab => ({ 
-        quote: vocab.quote, 
+      ...(mistralResponse.vocabularies || []).map(vocab => ({ 
+        ranges: [vocab.range], 
         errorType: 'vocabulary', 
         correction: vocab.synonyms.join(', '),
         type: 'vocabulary' as const
       }))
     ];
     
-    // Filter out duplicates (same quote and type)
-    const uniqueHighlights = allHighlights.filter((highlight, index, self) => 
-      index === self.findIndex(h => h.quote === highlight.quote && h.type === highlight.type)
-    );
-    
-    // Split the transcript by speakers
+    // Split the transcript by lines
     const lines = recording.transcript.split('\n\n');
     
     return (
       <div className="space-y-6">
         {lines.map((line, lineIndex) => {
-          // Find all highlights that appear in this line
-          const lineHighlights = uniqueHighlights.filter(h => line.includes(h.quote));
+          // Find highlights for this line (using ranges)
+          const lineHighlights = allHighlights.filter(h => {
+            return h.ranges.some(range => range[0] === lineIndex);
+          });
           
           if (lineHighlights.length === 0) {
             // If no highlights in this line, just render the line
             return <p key={lineIndex} className="text-left">{line}</p>;
           }
           
-          // Sort by the position they appear in the line
-          lineHighlights.sort((a, b) => line.indexOf(a.quote) - line.indexOf(b.quote));
-          
+          // Create highlighted spans for this line
           const elements: React.ReactNode[] = [];
-          let lastIndex = 0;
+          let lastCharIndex = 0;
+          const processedIndices = new Set<number>();
           
-          lineHighlights.forEach((highlight, i) => {
-            const startIndex = line.indexOf(highlight.quote, lastIndex);
-            if (startIndex === -1) return; // Skip if not found
-            
-            const endIndex = startIndex + highlight.quote.length;
-            
-            // Add text before the highlight
-            if (startIndex > lastIndex) {
-              elements.push(
-                <span key={`text-${lineIndex}-${i}`}>
-                  {line.substring(lastIndex, startIndex)}
-                </span>
-              );
-            }
-            
-            // Define color based on error type
-            let highlightColor = '';
-            if (highlight.type === 'mistake') {
-              highlightColor = 'bg-red-100';
-            } else if (highlight.type === 'inaccuracy') {
-              highlightColor = 'bg-yellow-100';
-            } else if (highlight.type === 'vocabulary') {
-              highlightColor = 'bg-blue-100';
-            }
-            
-            // Add the highlighted text with hover card
-            elements.push(
-              <HoverCard key={`highlight-${lineIndex}-${i}`}>
-                <HoverCardTrigger asChild>
-                  <span 
-                    className={`${highlightColor} px-1 py-0.5 rounded-sm cursor-help`}
-                  >
-                    {highlight.quote}
-                  </span>
-                </HoverCardTrigger>
-                <HoverCardContent className="w-80 p-4">
-                  <div className="space-y-2">
-                    <h4 className="font-medium">{highlight.errorType}</h4>
-                    <p className="text-sm">
-                      {highlight.correction}
-                    </p>
-                    {highlight.type === 'inaccuracy' && highlight.errorType === 'filling_word' && (
-                      <p className="text-xs text-muted-foreground">
-                        Füllwörter wie "{highlight.quote}" stören den Sprachfluss und sollten vermieden werden.
-                      </p>
-                    )}
-                  </div>
-                </HoverCardContent>
-              </HoverCard>
-            );
-            
-            lastIndex = endIndex;
+          // Build a map of character positions to highlights
+          const charToHighlight = new Map<number, {
+            highlight: typeof lineHighlights[0],
+            endChar: number
+          }>();
+          
+          // Map each character position to its highlight
+          lineHighlights.forEach(highlight => {
+            highlight.ranges.forEach(range => {
+              if (range[0] === lineIndex) {
+                const startChar = range[1];
+                const endChar = range[2];
+                
+                for (let i = startChar; i < endChar; i++) {
+                  charToHighlight.set(i, {
+                    highlight,
+                    endChar
+                  });
+                }
+              }
+            });
           });
           
+          // Go through the line character by character
+          for (let i = 0; i < line.length; i++) {
+            if (processedIndices.has(i)) continue;
+            
+            const highlightInfo = charToHighlight.get(i);
+            
+            if (highlightInfo) {
+              // Add text before this highlight
+              if (i > lastCharIndex) {
+                elements.push(
+                  <span key={`text-${lineIndex}-${i}`}>
+                    {line.substring(lastCharIndex, i)}
+                  </span>
+                );
+              }
+              
+              const highlightText = line.substring(i, highlightInfo.endChar);
+              
+              // Define color based on error type
+              let highlightColor = '';
+              if (highlightInfo.highlight.type === 'mistake') {
+                highlightColor = 'bg-red-100';
+              } else if (highlightInfo.highlight.type === 'inaccuracy') {
+                highlightColor = 'bg-yellow-100';
+              } else if (highlightInfo.highlight.type === 'vocabulary') {
+                highlightColor = 'bg-blue-100';
+              }
+              
+              // Add the highlighted span
+              elements.push(
+                <HoverCard key={`highlight-${lineIndex}-${i}`}>
+                  <HoverCardTrigger asChild>
+                    <span 
+                      className={`${highlightColor} px-1 py-0.5 rounded-sm cursor-help`}
+                    >
+                      {highlightText}
+                    </span>
+                  </HoverCardTrigger>
+                  <HoverCardContent className="w-80 p-4">
+                    <div className="space-y-2">
+                      <h4 className="font-medium">{highlightInfo.highlight.errorType}</h4>
+                      <p className="text-sm">
+                        {highlightInfo.highlight.correction}
+                      </p>
+                      {highlightInfo.highlight.type === 'inaccuracy' && highlightInfo.highlight.errorType === 'filling_word' && (
+                        <p className="text-xs text-muted-foreground">
+                          Füllwörter wie diese stören den Sprachfluss und sollten vermieden werden.
+                        </p>
+                      )}
+                    </div>
+                  </HoverCardContent>
+                </HoverCard>
+              );
+              
+              // Mark all these characters as processed
+              for (let j = i; j < highlightInfo.endChar; j++) {
+                processedIndices.add(j);
+              }
+              
+              lastCharIndex = highlightInfo.endChar;
+            }
+          }
+          
           // Add any remaining text
-          if (lastIndex < line.length) {
+          if (lastCharIndex < line.length) {
             elements.push(
               <span key={`text-${lineIndex}-end`}>
-                {line.substring(lastIndex)}
+                {line.substring(lastCharIndex)}
               </span>
             );
           }
           
-          return <p key={lineIndex} className="text-left">{elements}</p>;
+          return <p key={lineIndex} className="text-left">{elements.length > 0 ? elements : line}</p>;
         })}
       </div>
     );
@@ -506,11 +546,11 @@ export const Analysis: React.FC<AnalysisProps> = ({ recordingId }) => {
             </div>
           </div>
           
-          {recording.analysis?.recommendations && (
+          {(recording.analysis?.recommendations || recording.analysis?.summary) && (
             <div className="glass-panel p-6">
               <h3 className="text-lg font-medium mb-3">Recommendations</h3>
               <div className="bg-white/50 p-4 rounded-lg">
-                <p className="text-left">{recording.analysis.recommendations}</p>
+                <p className="text-left">{recording.analysis.recommendations || recording.analysis.summary}</p>
               </div>
             </div>
           )}

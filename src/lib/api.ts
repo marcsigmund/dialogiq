@@ -1,3 +1,4 @@
+
 import { API_ENDPOINTS } from "./constants";
 
 /**
@@ -51,6 +52,10 @@ export async function checkProcessStatus(processId: string): Promise<any> {
   try {
     const response = await fetch(`${API_ENDPOINTS.STATUS}/${processId}`, {
       method: "GET",
+      headers: {
+        'Accept': 'application/json',
+        'ngrok-skip-browser-warning': '69420' // Add ngrok header to bypass browser warning
+      }
     });
 
     if (!response.ok) {

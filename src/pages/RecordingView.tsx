@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
@@ -77,8 +76,7 @@ const RecordingView: React.FC = () => {
       duration: recordingInfo.duration,
       audioUrl: recordingInfo.url,
       transcript: '',
-      apiResponseId: recordingInfo.apiResponseId,
-      analysis: recordingInfo.apiResponseId ? { apiResponseId: recordingInfo.apiResponseId } : undefined
+      apiResponseId: recordingInfo.apiResponseId
     };
     
     addRecording(newRecording);

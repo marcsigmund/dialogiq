@@ -37,6 +37,19 @@ interface EvaluationResponseRanged {
   vocabularies: VocabItemRanged[];
 }
 
+// New API response format
+interface ApiProcessResult {
+  elevenlabs?: string[];
+  mistral?: {
+    mistakes: ErrorItemRanged[];
+    inaccuracies: ErrorItemRanged[];
+    vocabularies: VocabItemRanged[];
+  };
+  summary?: string;
+  transcript?: string;
+  evaluation?: EvaluationResponse;
+}
+
 export interface Recording {
   id: string;
   title: string;
@@ -44,6 +57,7 @@ export interface Recording {
   duration: number;
   audioUrl: string;
   transcript?: string;
+  apiResponseId?: string;
   analysis?: {
     highlights?: {
       startIndex: number;
@@ -55,6 +69,12 @@ export interface Recording {
     recommendations?: string;
     apiResponse?: EvaluationResponse;
     apiRangedResponse?: EvaluationResponseRanged;
+    mistralResponse?: {
+      mistakes: ErrorItemRanged[];
+      inaccuracies: ErrorItemRanged[];
+      vocabularies: VocabItemRanged[];
+    };
+    summary?: string;
   };
 }
 

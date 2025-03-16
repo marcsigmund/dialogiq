@@ -1,3 +1,4 @@
+
 import React, { useRef, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -271,8 +272,14 @@ export const VoiceRecognitionScreen: React.FC<VoiceRecognitionScreenProps> = ({
                 finalStatus.result
               );
 
-              // Check if we have formatted conversation or use the transcript directly
-              let conversationText = finalStatus.result.transcript || "";
+              // Check if we have elevenlabs data or use the transcript directly
+              let conversationText = "";
+              
+              if (finalStatus.result.elevenlabs && finalStatus.result.elevenlabs.length > 0) {
+                conversationText = finalStatus.result.elevenlabs.join("\n\n");
+              } else if (finalStatus.result.transcript) {
+                conversationText = finalStatus.result.transcript;
+              }
               
               // Convert speaker ids to "You" and "Partner" if needed
               if (conversationText.includes("speaker0:") || conversationText.includes("speaker1:")) {
