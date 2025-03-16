@@ -1,7 +1,6 @@
+import React, { createContext, useContext, useState, useEffect } from "react";
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
-
-type UseCaseType = 'language' | 'sales' | 'interview' | null;
+type UseCaseType = "language" | "sales" | "interview" | null;
 
 export interface Recording {
   id: string;
@@ -36,56 +35,53 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [isOnboarded, setIsOnboarded] = useState<boolean>(() => {
-    const stored = localStorage.getItem('isOnboarded');
-    return stored ? JSON.parse(stored) : false;
-  });
-  
+export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
+  const [isOnboarded, setIsOnboarded] = useState<boolean>(false);
+
   const [useCase, setUseCase] = useState<UseCaseType>(() => {
-    const stored = localStorage.getItem('useCase');
+    const stored = localStorage.getItem("useCase");
     return stored ? JSON.parse(stored) : null;
   });
-  
+
   const [recordings, setRecordings] = useState<Recording[]>(() => {
-    const stored = localStorage.getItem('recordings');
+    const stored = localStorage.getItem("recordings");
     return stored ? JSON.parse(stored) : [];
   });
-  
-  const [selectedRecordingId, setSelectedRecordingId] = useState<string | null>(null);
-  
+
+  const [selectedRecordingId, setSelectedRecordingId] = useState<string | null>(
+    null
+  );
+
   useEffect(() => {
-    localStorage.setItem('isOnboarded', JSON.stringify(isOnboarded));
-  }, [isOnboarded]);
-  
-  useEffect(() => {
-    localStorage.setItem('useCase', JSON.stringify(useCase));
+    localStorage.setItem("useCase", JSON.stringify(useCase));
   }, [useCase]);
-  
+
   useEffect(() => {
-    localStorage.setItem('recordings', JSON.stringify(recordings));
+    localStorage.setItem("recordings", JSON.stringify(recordings));
   }, [recordings]);
-  
+
   const addRecording = (recording: Recording) => {
-    setRecordings(prev => [recording, ...prev]);
+    setRecordings((prev) => [recording, ...prev]);
   };
-  
+
   const updateRecording = (id: string, data: Partial<Recording>) => {
-    setRecordings(prev => 
-      prev.map(recording => 
+    setRecordings((prev) =>
+      prev.map((recording) =>
         recording.id === id ? { ...recording, ...data } : recording
       )
     );
   };
-  
+
   const deleteRecording = (id: string) => {
-    setRecordings(prev => prev.filter(recording => recording.id !== id));
+    setRecordings((prev) => prev.filter((recording) => recording.id !== id));
   };
-  
+
   const getSelectedRecording = () => {
-    return recordings.find(r => r.id === selectedRecordingId);
+    return recordings.find((r) => r.id === selectedRecordingId);
   };
-  
+
   return (
     <AppContext.Provider
       value={{
@@ -110,7 +106,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 export const useApp = () => {
   const context = useContext(AppContext);
   if (context === undefined) {
-    throw new Error('useApp must be used within an AppProvider');
+    throw new Error("useApp must be used within an AppProvider");
   }
   return context;
 };

@@ -35,6 +35,13 @@ interface TranscriptionResult {
   words: Word[];
 }
 
+interface SpeakerSegment {
+  speaker_id: string;
+  text: string;
+  start: number;
+  end: number;
+}
+
 interface VoiceRecognitionScreenProps {
   onNext: () => void;
   onBack: () => void;
@@ -64,6 +71,7 @@ export const VoiceRecognitionScreen: React.FC<VoiceRecognitionScreenProps> = ({
   const [showTranscription, setShowTranscription] = useState(false);
   const [currentWordIndex, setCurrentWordIndex] = useState(-1);
   const transcriptionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [currentTypingLine, setCurrentTypingLine] = useState(0);
 
   const mediaRecorder = useRef<MediaRecorder | null>(null);
   const stream = useRef<MediaStream | null>(null);
@@ -257,15 +265,23 @@ export const VoiceRecognitionScreen: React.FC<VoiceRecognitionScreenProps> = ({
 
             if (
               finalStatus.status === "complete" &&
-              finalStatus.result?.elevenlabs?.text
+              finalStatus.result?.elevenlabs
             ) {
               console.log(
                 "Process completed successfully:",
                 finalStatus.result
               );
 
+              // Create a formatted conversation text from the array of strings
+              const conversationText = finalStatus.result.elevenlabs
+                .map(
+                  (text, index) =>
+                    `${index % 2 === 0 ? "You" : "Partner"}: ${text}`
+                )
+                .join("\n\n");
+
               // Set the transcription text and show it
-              setTranscriptionText(finalStatus.result.elevenlabs.text);
+              setTranscriptionText(conversationText);
               setShowTranscription(true);
 
               toast({
@@ -363,6 +379,14 @@ export const VoiceRecognitionScreen: React.FC<VoiceRecognitionScreenProps> = ({
 
   const handleNext = () => {
     if (voiceRecognized && !isUploading) {
+      // Log the transcription and audio state
+      console.log("Onboarding Voice Selection:", {
+        transcription: transcriptionText,
+        audioBlob: audioBlob.current,
+        audioUrl: audioUrl,
+        duration: audioRef.current?.duration || 0,
+      });
+      // Set a default use case
       onNext();
     }
   };
@@ -487,7 +511,13 @@ export const VoiceRecognitionScreen: React.FC<VoiceRecognitionScreenProps> = ({
         {transcriptionText && (
           <div className="w-full max-w-md">
             <button
-              onClick={() => setShowTranscription(!showTranscription)}
+              onClick={() => {
+                setShowTranscription(!showTranscription);
+                // Reset the typing line when showing transcription
+                if (!showTranscription) {
+                  setCurrentTypingLine(0);
+                }
+              }}
               className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors duration-200"
             >
               <div className="flex items-center space-x-2">
@@ -501,17 +531,37 @@ export const VoiceRecognitionScreen: React.FC<VoiceRecognitionScreenProps> = ({
             </button>
             {showTranscription && (
               <div className="mt-4 p-4 bg-white rounded-lg shadow-sm border text-left">
-                <Typewriter
-                  onInit={(typewriter) => {
-                    typewriter
-                      .changeDelay(30)
-                      .typeString(transcriptionText)
-                      .start();
-                  }}
-                  options={{
-                    cursor: "",
-                  }}
-                />
+                <div className="space-y-6">
+                  {transcriptionText?.split("\n\n").map((line, index) => (
+                    <div
+                      key={index}
+                      className={cn(
+                        "transition-all duration-500",
+                        index > currentTypingLine ? "opacity-0" : "opacity-100"
+                      )}
+                    >
+                      {index === currentTypingLine && (
+                        <Typewriter
+                          onInit={(typewriter) => {
+                            typewriter
+                              .changeDelay(30)
+                              .typeString(line)
+                              .callFunction(() => {
+                                setTimeout(() => {
+                                  setCurrentTypingLine((prev) => prev + 1);
+                                }, 500); // Add a small delay between lines
+                              })
+                              .start();
+                          }}
+                          options={{
+                            cursor: "",
+                          }}
+                        />
+                      )}
+                      {index < currentTypingLine && <div>{line}</div>}
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -542,7 +592,7 @@ export const VoiceRecognitionScreen: React.FC<VoiceRecognitionScreenProps> = ({
           onClick={handleNext}
           disabled={!voiceRecognized || isUploading || isPolling}
         >
-          Next
+          See Results
           <ArrowRight className="w-4 h-4 ml-2" />
         </Button>
       </div>
