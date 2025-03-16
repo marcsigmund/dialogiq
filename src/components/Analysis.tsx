@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp, Recording } from '@/contexts/AppContext';
 import { Button } from '@/components/ui/button';
-import { LoaderCircle, CheckCircle, AlertCircle, Text, List } from 'lucide-react';
+import { LoaderCircle, CheckCircle, AlertCircle, Text, List, ChevronUp, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/components/ui/use-toast';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -13,7 +13,11 @@ interface AnalysisProps {
 
 type ErrorType = 'mistake' | 'inaccuracy' | 'grammar';
 
-interface HighlightWithType extends Recording['analysis']['highlights'][0] {
+// Define the structure we expect for a highlight item
+interface HighlightItem {
+  startIndex: number;
+  endIndex: number;
+  suggestion: string;
   type: ErrorType;
   color: string;
 }
@@ -55,21 +59,21 @@ export const Analysis: React.FC<AnalysisProps> = ({ recordingId }) => {
             startIndex: 89,
             endIndex: 110,
             suggestion: "Watch your word order in 'Manchmal mache ich Fehler'. Consider using 'Manchmal Fehler mache ich' for variety.",
-            type: "inaccuracy",
+            type: "inaccuracy" as ErrorType,
             color: "bg-yellow-100"
           },
           {
             startIndex: 159,
             endIndex: 183,
             suggestion: "Better to say 'Ich hoffe, dass ich mich verbessere' for more natural phrasing.",
-            type: "grammar",
+            type: "grammar" as ErrorType,
             color: "bg-orange-100"
           },
           {
             startIndex: 50,
             endIndex: 62,
             suggestion: "The word 'Student' should be 'Studierender' for gender-neutral language.",
-            type: "mistake",
+            type: "mistake" as ErrorType,
             color: "bg-red-100"
           }
         ],
@@ -125,7 +129,10 @@ export const Analysis: React.FC<AnalysisProps> = ({ recordingId }) => {
       }
       
       // Add the highlighted text with appropriate color based on type
-      const highlightColor = (highlight as HighlightWithType).color || "bg-yellow-100";
+      // For highlights without color property, use a default
+      const highlightColor = 'color' in highlight 
+        ? (highlight as HighlightItem).color 
+        : 'bg-yellow-100';
       
       elements.push(
         <span 
